@@ -6,9 +6,17 @@ class D3WorldMapElement extends HTMLElement {
     this.handleResize = this.handleResize.bind(this);
     this.activeTooltip = null;
     this.resizeTimeout = null;
+    this.initialRenderDone = false;
     
-    // Default style props
-    this.styleProps = {
+    // Parse initial style props if available
+    const initialStyleProps = this.getAttribute('style-props');
+    this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
+    
+    console.log('✅ D3WorldMapElement: Constructor called with props:', this.styleProps);
+  }
+
+  getDefaultStyleProps() {
+    return {
       bgColor1: '#667eea',
       bgColor2: '#764ba2',
       countryFill: '#ffffff',
@@ -25,16 +33,30 @@ class D3WorldMapElement extends HTMLElement {
       showZoom: true,
       showStats: true,
       tooltipBg: '#1a202c',
-      tooltipText: '#ffffff',
-      showTooltip: true
+      tooltipTitleColor: '#63b3ed',
+      tooltipLabelColor: '#a0aec0',
+      tooltipValueColor: '#e2e8f0',
+      tooltipHighlightColor: '#9ae6b4',
+      showTooltip: true,
+      titleColor: '#2d3748',
+      statsValueColor: '#667eea',
+      statsLabelColor: '#718096',
+      statsBgColor: '#ffffff',
+      legendTextColor: '#4a5568',
+      language: 'en'
     };
-    
-    console.log('✅ D3WorldMapElement: Constructor called');
   }
 
   connectedCallback() {
     console.log('✅ D3WorldMapElement: Connected to DOM');
-    this.render();
+    // Small delay to ensure style-props attribute is set
+    setTimeout(() => {
+      const stylePropsAttr = this.getAttribute('style-props');
+      if (stylePropsAttr) {
+        this.styleProps = JSON.parse(stylePropsAttr);
+      }
+      this.render();
+    }, 50);
   }
 
   disconnectedCallback() {
@@ -55,7 +77,7 @@ class D3WorldMapElement extends HTMLElement {
         this.styleProps = { ...this.styleProps, ...newStyleProps };
         console.log('🎨 Style props updated:', this.styleProps);
         
-        if (this.mapLoaded) {
+        if (this.initialRenderDone) {
           this.updateStyles();
         }
       } catch (error) {
@@ -67,10 +89,187 @@ class D3WorldMapElement extends HTMLElement {
     }
   }
 
+  getTranslations() {
+    const translations = {
+      en: {
+        mapTitle: '🌍 Live Visitor Map',
+        cities: 'Cities',
+        totalVisits: 'Total Visits',
+        last24Hours: 'Last 24 Hours',
+        recent: 'Recent',
+        earlier: 'Earlier',
+        totalVisitsLabel: 'Total Visits:',
+        uniqueVisitors: 'Unique Visitors:',
+        lastVisit: 'Last Visit:',
+        activeNow: '🟢 Active in last 24h'
+      },
+      es: {
+        mapTitle: '🌍 Mapa de Visitantes en Vivo',
+        cities: 'Ciudades',
+        totalVisits: 'Visitas Totales',
+        last24Hours: 'Últimas 24 Horas',
+        recent: 'Reciente',
+        earlier: 'Anterior',
+        totalVisitsLabel: 'Visitas Totales:',
+        uniqueVisitors: 'Visitantes Únicos:',
+        lastVisit: 'Última Visita:',
+        activeNow: '🟢 Activo en las últimas 24h'
+      },
+      fr: {
+        mapTitle: '🌍 Carte des Visiteurs en Direct',
+        cities: 'Villes',
+        totalVisits: 'Visites Totales',
+        last24Hours: 'Dernières 24 Heures',
+        recent: 'Récent',
+        earlier: 'Plus tôt',
+        totalVisitsLabel: 'Visites Totales:',
+        uniqueVisitors: 'Visiteurs Uniques:',
+        lastVisit: 'Dernière Visite:',
+        activeNow: '🟢 Actif dans les dernières 24h'
+      },
+      de: {
+        mapTitle: '🌍 Live-Besucherkarte',
+        cities: 'Städte',
+        totalVisits: 'Gesamtbesuche',
+        last24Hours: 'Letzte 24 Stunden',
+        recent: 'Kürzlich',
+        earlier: 'Früher',
+        totalVisitsLabel: 'Gesamtbesuche:',
+        uniqueVisitors: 'Einzigartige Besucher:',
+        lastVisit: 'Letzter Besuch:',
+        activeNow: '🟢 Aktiv in den letzten 24h'
+      },
+      zh: {
+        mapTitle: '🌍 实时访客地图',
+        cities: '城市',
+        totalVisits: '总访问量',
+        last24Hours: '过去24小时',
+        recent: '最近',
+        earlier: '较早',
+        totalVisitsLabel: '总访问量：',
+        uniqueVisitors: '独立访客：',
+        lastVisit: '最后访问：',
+        activeNow: '🟢 最近24小时活跃'
+      },
+      ja: {
+        mapTitle: '🌍 リアルタイム訪問者マップ',
+        cities: '都市',
+        totalVisits: '総訪問数',
+        last24Hours: '過去24時間',
+        recent: '最近',
+        earlier: '以前',
+        totalVisitsLabel: '総訪問数：',
+        uniqueVisitors: 'ユニーク訪問者：',
+        lastVisit: '最終訪問：',
+        activeNow: '🟢 過去24時間にアクティブ'
+      },
+      ko: {
+        mapTitle: '🌍 실시간 방문자 지도',
+        cities: '도시',
+        totalVisits: '총 방문 수',
+        last24Hours: '지난 24시간',
+        recent: '최근',
+        earlier: '이전',
+        totalVisitsLabel: '총 방문 수:',
+        uniqueVisitors: '고유 방문자:',
+        lastVisit: '마지막 방문:',
+        activeNow: '🟢 지난 24시간 동안 활성'
+      },
+      ar: {
+        mapTitle: '🌍 خريطة الزوار المباشرة',
+        cities: 'مدن',
+        totalVisits: 'إجمالي الزيارات',
+        last24Hours: 'آخر 24 ساعة',
+        recent: 'حديث',
+        earlier: 'سابق',
+        totalVisitsLabel: 'إجمالي الزيارات:',
+        uniqueVisitors: 'زوار فريدون:',
+        lastVisit: 'آخر زيارة:',
+        activeNow: '🟢 نشط في آخر 24 ساعة'
+      },
+      tr: {
+        mapTitle: '🌍 Canlı Ziyaretçi Haritası',
+        cities: 'Şehirler',
+        totalVisits: 'Toplam Ziyaret',
+        last24Hours: 'Son 24 Saat',
+        recent: 'Yakın Tarih',
+        earlier: 'Önceki',
+        totalVisitsLabel: 'Toplam Ziyaret:',
+        uniqueVisitors: 'Benzersiz Ziyaretçiler:',
+        lastVisit: 'Son Ziyaret:',
+        activeNow: '🟢 Son 24 saatte aktif'
+      },
+      pt: {
+        mapTitle: '🌍 Mapa de Visitantes ao Vivo',
+        cities: 'Cidades',
+        totalVisits: 'Visitas Totais',
+        last24Hours: 'Últimas 24 Horas',
+        recent: 'Recente',
+        earlier: 'Anterior',
+        totalVisitsLabel: 'Visitas Totais:',
+        uniqueVisitors: 'Visitantes Únicos:',
+        lastVisit: 'Última Visita:',
+        activeNow: '🟢 Ativo nas últimas 24h'
+      },
+      ru: {
+        mapTitle: '🌍 Карта посетителей в реальном времени',
+        cities: 'Города',
+        totalVisits: 'Всего посещений',
+        last24Hours: 'За последние 24 часа',
+        recent: 'Недавние',
+        earlier: 'Ранее',
+        totalVisitsLabel: 'Всего посещений:',
+        uniqueVisitors: 'Уникальные посетители:',
+        lastVisit: 'Последний визит:',
+        activeNow: '🟢 Активен за последние 24ч'
+      },
+      it: {
+        mapTitle: '🌍 Mappa Visitatori in Tempo Reale',
+        cities: 'Città',
+        totalVisits: 'Visite Totali',
+        last24Hours: 'Ultime 24 Ore',
+        recent: 'Recente',
+        earlier: 'Precedente',
+        totalVisitsLabel: 'Visite Totali:',
+        uniqueVisitors: 'Visitatori Unici:',
+        lastVisit: 'Ultima Visita:',
+        activeNow: '🟢 Attivo nelle ultime 24h'
+      },
+      nl: {
+        mapTitle: '🌍 Live Bezoekers Kaart',
+        cities: 'Steden',
+        totalVisits: 'Totale Bezoeken',
+        last24Hours: 'Laatste 24 Uur',
+        recent: 'Recent',
+        earlier: 'Eerder',
+        totalVisitsLabel: 'Totale Bezoeken:',
+        uniqueVisitors: 'Unieke Bezoekers:',
+        lastVisit: 'Laatste Bezoek:',
+        activeNow: '🟢 Actief in de laatste 24u'
+      },
+      hi: {
+        mapTitle: '🌍 लाइव आगंतुक मानचित्र',
+        cities: 'शहर',
+        totalVisits: 'कुल विज़िट',
+        last24Hours: 'पिछले 24 घंटे',
+        recent: 'हाल का',
+        earlier: 'पहले',
+        totalVisitsLabel: 'कुल विज़िट:',
+        uniqueVisitors: 'अद्वितीय आगंतुक:',
+        lastVisit: 'अंतिम विज़िट:',
+        activeNow: '🟢 पिछले 24 घंटों में सक्रिय'
+      }
+    };
+    
+    const lang = this.styleProps.language || 'en';
+    return translations[lang] || translations.en;
+  }
+
   render() {
-    console.log('🎨 Rendering D3 World Map');
+    console.log('🎨 Rendering D3 World Map with styles:', this.styleProps);
     
     const styles = this.getStyles();
+    const t = this.getTranslations();
     
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
@@ -85,7 +284,6 @@ class D3WorldMapElement extends HTMLElement {
           </svg>
           <div class="tooltip" id="tooltip"></div>
           
-          <!-- Zoom Controls -->
           <div class="zoom-controls" id="zoomControls">
             <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
             <button class="zoom-btn zoom-reset" id="zoomReset" title="Reset Zoom">⟲</button>
@@ -95,27 +293,27 @@ class D3WorldMapElement extends HTMLElement {
         
         <div class="bottom-stats" id="bottomStats">
           <div class="map-title">
-            🌍 Live Visitor Map
+            ${t.mapTitle}
           </div>
           
           <div class="stats-group">
             <div class="stat-card">
               <div class="stat-value" id="cityCount">0</div>
-              <div class="stat-label">Cities</div>
+              <div class="stat-label">${t.cities}</div>
             </div>
             
             <div class="stat-divider"></div>
             
             <div class="stat-card">
               <div class="stat-value" id="totalVisits">0</div>
-              <div class="stat-label">Total Visits</div>
+              <div class="stat-label">${t.totalVisits}</div>
             </div>
             
             <div class="stat-divider"></div>
             
             <div class="stat-card">
               <div class="stat-value" id="recentCount">0</div>
-              <div class="stat-label">Last 24 Hours</div>
+              <div class="stat-label">${t.last24Hours}</div>
             </div>
           </div>
           
@@ -127,7 +325,7 @@ class D3WorldMapElement extends HTMLElement {
                         fill="${this.styleProps.markerRecent}"/>
                 </svg>
               </div>
-              <span>Recent</span>
+              <span>${t.recent}</span>
             </div>
             
             <div class="legend-item">
@@ -137,22 +335,26 @@ class D3WorldMapElement extends HTMLElement {
                         fill="${this.styleProps.markerOld}"/>
                 </svg>
               </div>
-              <span>Earlier</span>
+              <span>${t.earlier}</span>
             </div>
           </div>
         </div>
       </div>
     `;
     
-    // Apply visibility settings
+    this.initialRenderDone = true;
     this.updateVisibility();
-    
     this.loadD3AndMap();
     this.setupZoomControls();
   }
 
   getStyles() {
-    const { bgColor1, bgColor2, countryFill, countryStroke, countryHover, markerRecent, markerOld, badgeBg, badgeText, tooltipBg, tooltipText } = this.styleProps;
+    const { 
+      bgColor1, bgColor2, countryFill, countryStroke, countryHover, 
+      markerRecent, markerOld, badgeBg, badgeText, 
+      tooltipBg, tooltipTitleColor, tooltipLabelColor, tooltipValueColor, tooltipHighlightColor,
+      titleColor, statsValueColor, statsLabelColor, statsBgColor, legendTextColor
+    } = this.styleProps;
     
     return `
       :host {
@@ -319,7 +521,7 @@ class D3WorldMapElement extends HTMLElement {
       .tooltip {
         position: absolute;
         background: ${tooltipBg};
-        color: ${tooltipText};
+        color: white;
         padding: 14px 18px;
         border-radius: 10px;
         font-size: 13px;
@@ -346,7 +548,7 @@ class D3WorldMapElement extends HTMLElement {
         display: block;
         font-size: 15px;
         margin-bottom: 6px;
-        color: #63b3ed;
+        color: ${tooltipTitleColor};
       }
       
       .tooltip-row {
@@ -357,12 +559,12 @@ class D3WorldMapElement extends HTMLElement {
       }
       
       .tooltip-label {
-        color: #a0aec0;
+        color: ${tooltipLabelColor};
         margin-right: 12px;
       }
       
       .tooltip-value {
-        color: #e2e8f0;
+        color: ${tooltipValueColor};
         font-weight: 600;
       }
       
@@ -372,7 +574,7 @@ class D3WorldMapElement extends HTMLElement {
         border-radius: 6px;
         margin-top: 6px;
         text-align: center;
-        color: #9ae6b4;
+        color: ${tooltipHighlightColor};
         font-weight: 600;
       }
       
@@ -422,7 +624,7 @@ class D3WorldMapElement extends HTMLElement {
       }
       
       .bottom-stats {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+        background: ${statsBgColor};
         padding: 16px 24px;
         display: flex;
         justify-content: space-around;
@@ -433,6 +635,7 @@ class D3WorldMapElement extends HTMLElement {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
         flex-wrap: wrap;
         flex-shrink: 0;
+        margin: 0;
       }
       
       .stats-group {
@@ -452,7 +655,7 @@ class D3WorldMapElement extends HTMLElement {
       }
       
       .stat-label {
-        color: #718096;
+        color: ${statsLabelColor};
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
@@ -462,10 +665,7 @@ class D3WorldMapElement extends HTMLElement {
       .stat-value {
         font-size: 28px;
         font-weight: 800;
-        background: linear-gradient(135deg, ${bgColor1}, ${bgColor2});
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: ${statsValueColor};
         line-height: 1;
       }
       
@@ -487,7 +687,7 @@ class D3WorldMapElement extends HTMLElement {
         gap: 8px;
         font-size: 12px;
         font-weight: 500;
-        color: #4a5568;
+        color: ${legendTextColor};
       }
       
       .legend-icon {
@@ -504,7 +704,7 @@ class D3WorldMapElement extends HTMLElement {
         gap: 8px;
         font-size: 14px;
         font-weight: 700;
-        color: #2d3748;
+        color: ${titleColor};
       }
       
       .loading {
@@ -664,13 +864,11 @@ class D3WorldMapElement extends HTMLElement {
     
     if (markerStyle === 'pin') {
       return `
-        <!-- Location Pin Icon - Recent (Green) -->
         <g id="pin-recent">
           <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
                 class="marker-pin-recent"/>
         </g>
         
-        <!-- Location Pin Icon - Old (Blue) -->
         <g id="pin-old">
           <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
                 class="marker-pin-old"/>
@@ -696,12 +894,14 @@ class D3WorldMapElement extends HTMLElement {
         </g>
       `;
     } else if (markerStyle === 'star') {
+      // Scale star based on markerSize
+      const scale = markerSize / 24; // 24 is default size
       return `
-        <g id="star-recent">
+        <g id="star-recent" transform="scale(${scale})">
           <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
                 class="marker-star-recent" transform="translate(-12, -12)"/>
         </g>
-        <g id="star-old">
+        <g id="star-old" transform="scale(${scale})">
           <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
                 class="marker-star-old" transform="translate(-12, -12)"/>
         </g>
@@ -734,13 +934,16 @@ class D3WorldMapElement extends HTMLElement {
   updateStyles() {
     console.log('🎨 Updating map styles...');
     
-    // Re-render to apply new styles
     const mapData = this.getAttribute('map-data');
+    this.mapLoaded = false;
     this.render();
     
-    // Reload map with new styles
-    if (this.mapLoaded && mapData) {
-      this.loadD3AndMap();
+    if (mapData) {
+      setTimeout(() => {
+        if (this.mapLoaded) {
+          this.setAttribute('map-data', mapData);
+        }
+      }, 1000);
     }
   }
 
@@ -978,6 +1181,7 @@ class D3WorldMapElement extends HTMLElement {
     
     try {
       const locations = JSON.parse(mapData);
+      const t = this.getTranslations();
       console.log('\n========== UPDATING CITY-LEVEL MARKERS ==========');
       console.log('📍 Total cities:', locations.length);
       
@@ -1027,7 +1231,6 @@ class D3WorldMapElement extends HTMLElement {
           .attr('class', 'location-marker')
           .attr('transform', `translate(${x}, ${y})`);
         
-        // Add pulse animation for recent visitors
         if (isRecent && showPulse) {
           const pulseY = markerStyle === 'pin' ? -10 : 0;
           markerGroup.append('circle')
@@ -1038,10 +1241,8 @@ class D3WorldMapElement extends HTMLElement {
             .style('color', markerRecent);
         }
         
-        // Add marker based on style
         this.addMarker(markerGroup, isRecent, markerStyle, markerSize);
         
-        // Add visit count badge
         if (showVisitCount && location.totalVisits > 1) {
           const badgeY = markerStyle === 'pin' ? -20 : -(markerSize / 2) - 5;
           const badge = markerGroup.append('g')
@@ -1063,7 +1264,6 @@ class D3WorldMapElement extends HTMLElement {
             .text(location.totalVisits > 99 ? '99+' : location.totalVisits);
         }
         
-        // Tooltip events
         if (showTooltip) {
           let enterTimeout;
           let leaveTimeout;
@@ -1077,18 +1277,18 @@ class D3WorldMapElement extends HTMLElement {
               tooltip.innerHTML = `
                 <strong>📍 ${location.title || 'Visitor Location'}</strong>
                 <div class="tooltip-row">
-                  <span class="tooltip-label">Total Visits:</span>
+                  <span class="tooltip-label">${t.totalVisitsLabel}</span>
                   <span class="tooltip-value">${location.totalVisits || 1}</span>
                 </div>
                 <div class="tooltip-row">
-                  <span class="tooltip-label">Unique Visitors:</span>
+                  <span class="tooltip-label">${t.uniqueVisitors}</span>
                   <span class="tooltip-value">${location.visitorCount || 1}</span>
                 </div>
                 <div class="tooltip-row">
-                  <span class="tooltip-label">Last Visit:</span>
+                  <span class="tooltip-label">${t.lastVisit}</span>
                   <span class="tooltip-value">${location.lastVisit || 'Unknown'}</span>
                 </div>
-                ${isRecent ? '<div class="tooltip-highlight">🟢 Active in last 24h</div>' : ''}
+                ${isRecent ? `<div class="tooltip-highlight">${t.activeNow}</div>` : ''}
               `;
               tooltip.classList.add('active');
             }, 100);
