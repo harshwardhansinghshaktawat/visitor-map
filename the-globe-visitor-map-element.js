@@ -107,7 +107,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       tr: { mapTitle: '🌍 Canlı Ziyaretçi Küresi', cities: 'Şehirler', totalVisits: 'Toplam Ziyaret', last24Hours: 'Son 24 Saat', recent: 'Yakın Tarih', earlier: 'Önceki', totalVisitsLabel: 'Toplam Ziyaret:', uniqueVisitors: 'Benzersiz Ziyaretçiler:', lastVisit: 'Son Ziyaret:', activeNow: '🟢 Son 24 saatte aktif' },
       pt: { mapTitle: '🌍 Globo de Visitantes ao Vivo', cities: 'Cidades', totalVisits: 'Visitas Totais', last24Hours: 'Últimas 24 Horas', recent: 'Recente', earlier: 'Anterior', totalVisitsLabel: 'Visitas Totais:', uniqueVisitors: 'Visitantes Únicos:', lastVisit: 'Última Visita:', activeNow: '🟢 Ativo nas últimas 24h' },
       ru: { mapTitle: '🌍 Глобус посетителей в реальном времени', cities: 'Города', totalVisits: 'Всего посещений', last24Hours: 'За последние 24 часа', recent: 'Недавние', earlier: 'Ранее', totalVisitsLabel: 'Всего посещений:', uniqueVisitors: 'Уникальные посетители:', lastVisit: 'Последний визит:', activeNow: '🟢 Активен за последние 24ч' },
-      it: { mapTitle: '🌍 Globo Visitatori in Tempo Reale', cities: 'Città', totalVisits: 'Visite Totali', last24Hours: 'Ultime 24 Ore', recent: 'Recente', earlier: 'Precedente', totalVisitsLabel: 'Visite Totali:', uniqueVisitors: 'Visitatori Unici:', lastVisit: 'Ultima Visita:', activeNow: '🟢 Attivo nelle ultime 24h' },
+      it: { mapTitle: '🌍 Globo Visitatori in Tempo Reale', cities: 'Città', totalVisits: 'Visite Totali', last24Hours: 'Ultime 24 Ore', recent: 'Recente', earlier: 'Precedente', totalVistsLabel: 'Visite Totali:', uniqueVisitors: 'Visitatori Unici:', lastVisit: 'Ultima Visita:', activeNow: '🟢 Attivo nelle ultime 24h' },
       nl: { mapTitle: '🌍 Live Bezoekers Globe', cities: 'Steden', totalVisits: 'Totale Bezoeken', last24Hours: 'Laatste 24 Uur', recent: 'Recent', earlier: 'Eerder', totalVisitsLabel: 'Totale Bezoeken:', uniqueVisitors: 'Unieke Bezoekers:', lastVisit: 'Laatste Bezoek:', activeNow: '🟢 Actief in de laatste 24u' },
       hi: { mapTitle: '🌍 लाइव आगंतुक ग्लोब', cities: 'शहर', totalVisits: 'कुल विज़िट', last24Hours: 'पिछले 24 घंटे', recent: 'हाल का', earlier: 'पहले', totalVisitsLabel: 'कुल विज़िट:', uniqueVisitors: 'अद्वितीय आगंतुक:', lastVisit: 'अंतिम विज़िट:', activeNow: '🟢 पिछले 24 घंटों में सक्रिय' }
     };
@@ -708,7 +708,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       }
     }));
     
-    // Auto-rotation using d3.timer (continues even after dragging)
+    // Auto-rotation using d3.timer
     this.rotationTimer = d3.timer((elapsed) => {
       const rotate = this.projection.rotate();
       const k = sensitivity / this.projection.scale();
@@ -785,13 +785,17 @@ class GlobeVisitorMapElement extends HTMLElement {
     const { markerStyle } = this.styleProps;
     
     if (markerStyle === 'circle') {
+      // Circle marker
       group.append('circle')
         .attr('class', 'marker-shape')
         .attr('r', size / 2.5)
         .attr('fill', color)
         .attr('stroke', 'white')
-        .attr('stroke-width', 3);
+        .attr('stroke-width', 3)
+        .attr('opacity', 1);
+        
     } else if (markerStyle === 'square') {
+      // Square marker
       const squareSize = size / 2;
       group.append('rect')
         .attr('class', 'marker-shape')
@@ -801,47 +805,65 @@ class GlobeVisitorMapElement extends HTMLElement {
         .attr('height', squareSize)
         .attr('fill', color)
         .attr('stroke', 'white')
-        .attr('stroke-width', 3);
+        .attr('stroke-width', 3)
+        .attr('opacity', 1);
+        
     } else if (markerStyle === 'star') {
-      const starPath = this.createStarPath(size / 2.5);
+      // Star marker - simplified 5-pointed star
+      const starSize = size / 2;
+      const points = [];
+      for (let i = 0; i < 5; i++) {
+        // Outer point
+        const outerAngle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+        points.push([
+          Math.cos(outerAngle) * starSize,
+          Math.sin(outerAngle) * starSize
+        ]);
+        // Inner point
+        const innerAngle = ((i * 4 + 2) * Math.PI / 5) - Math.PI / 2;
+        points.push([
+          Math.cos(innerAngle) * starSize * 0.4,
+          Math.sin(innerAngle) * starSize * 0.4
+        ]);
+      }
+      
+      const starPath = 'M' + points.map(p => p.join(',')).join('L') + 'Z';
+      
       group.append('path')
         .attr('class', 'marker-shape')
         .attr('d', starPath)
         .attr('fill', color)
         .attr('stroke', 'white')
-        .attr('stroke-width', 2);
-    } else { // pin (default)
-      const pinPath = this.createPinPath(size / 2);
+        .attr('stroke-width', 2)
+        .attr('opacity', 1);
+        
+    } else {
+      // Pin marker (default) - teardrop shape
+      const pinSize = size / 2;
+      const pinPath = `
+        M 0,0
+        C -${pinSize * 0.5},-${pinSize * 0.3} -${pinSize * 0.5},-${pinSize * 0.7} 0,-${pinSize}
+        C ${pinSize * 0.5},-${pinSize * 0.7} ${pinSize * 0.5},-${pinSize * 0.3} 0,0
+        Z
+      `;
+      
       group.append('path')
         .attr('class', 'marker-shape')
         .attr('d', pinPath)
         .attr('fill', color)
         .attr('stroke', 'white')
-        .attr('stroke-width', 2);
+        .attr('stroke-width', 2)
+        .attr('opacity', 1);
+        
+      // Add center circle for pin
+      group.append('circle')
+        .attr('class', 'marker-pin-center')
+        .attr('cx', 0)
+        .attr('cy', -pinSize * 0.6)
+        .attr('r', pinSize * 0.25)
+        .attr('fill', 'white')
+        .attr('opacity', 1);
     }
-  }
-
-  createPinPath(size) {
-    return `M 0,0 
-            C -${size/2},-${size/3} -${size/2},-${size*2/3} 0,-${size}
-            C ${size/2},-${size*2/3} ${size/2},-${size/3} 0,0 z`;
-  }
-
-  createStarPath(size) {
-    const points = 5;
-    const outerRadius = size;
-    const innerRadius = size / 2.5;
-    let path = '';
-    
-    for (let i = 0; i < points * 2; i++) {
-      const radius = i % 2 === 0 ? outerRadius : innerRadius;
-      const angle = (Math.PI * i) / points - Math.PI / 2;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
-      path += (i === 0 ? 'M' : 'L') + x + ',' + y;
-    }
-    path += 'Z';
-    return path;
   }
 
   renderMarkers() {
@@ -922,7 +944,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         const color = d.isRecent ? markerRecent : markerOld;
         self.createMarkerShape(group, d, markerSize, color);
         
-        group.selectAll('.marker-shape')
+        group.selectAll('.marker-shape, .marker-pin-center')
           .style('cursor', 'pointer')
           .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))');
       });
@@ -940,7 +962,8 @@ class GlobeVisitorMapElement extends HTMLElement {
               .attr('r', 12)
               .attr('fill', badgeBg)
               .attr('stroke', d.isRecent ? markerRecent : markerOld)
-              .attr('stroke-width', 2);
+              .attr('stroke-width', 2)
+              .attr('opacity', 1);
             
             group.append('text')
               .attr('text-anchor', 'middle')
