@@ -982,6 +982,14 @@ class D3GlobeElement extends HTMLElement {
     const { bgColor1, countryFill, countryStroke } = this.styleProps;
     
     try {
+      // Show initial loading message
+      if (loading) {
+        loading.textContent = this.getTranslations().loading;
+        loading.style.display = 'block';
+        loading.style.color = 'white';
+        loading.style.fontSize = '18px';
+      }
+      
       // Initialize Globe first
       this.globe = window.Globe({ animateIn: true })
         (container)
@@ -998,17 +1006,27 @@ class D3GlobeElement extends HTMLElement {
         .height(container.clientHeight)
         .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
       
-      // Configure controls
-      this.globe.controls().autoRotate = true;
-      this.globe.controls().autoRotateSpeed = 0.5;
-      this.globe.controls().enableZoom = true;
-      this.globe.controls().minDistance = 101;
-      this.globe.controls().maxDistance = 500;
+      // Configure controls with SMART SCROLL HANDLING
+      const controls = this.globe.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.5;
+      controls.enableZoom = true;
+      controls.minDistance = 101;
+      controls.maxDistance = 500;
       
       console.log('✅ Globe initialized, loading countries...');
       
       // Load countries data with retry logic
-      await this.loadCountriesData(loading, countryFill, countryStroke);
+      const success = await this.loadCountriesData(loading, countryFill, countryStroke);
+      
+      // Setup smart scrolling after successful load (in try-catch to be safe)
+      if (success && this.globe) {
+        try {
+          this.setupSmartScrolling(controls, container);
+        } catch (scrollError) {
+          console.warn('⚠️ Smart scrolling setup failed (non-critical):', scrollError);
+        }
+      }
       
     } catch (error) {
       console.error('❌ Critical error initializing globe:', error);
@@ -1026,6 +1044,12 @@ class D3GlobeElement extends HTMLElement {
       // Ensure TopoJSON is loaded
       if (!window.topojson) {
         console.log('⏳ Waiting for TopoJSON to load...');
+        
+        if (loading) {
+          loading.textContent = 'Loading libraries...';
+          loading.style.color = 'white';
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 500));
         
         if (!window.topojson && retryCount < maxRetries) {
@@ -1040,9 +1064,14 @@ class D3GlobeElement extends HTMLElement {
       
       console.log('📥 Fetching countries data...');
       
+      if (loading) {
+        loading.textContent = 'Loading world map...';
+        loading.style.color = 'white';
+      }
+      
       // Fetch with timeout
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeout = setTimeout(() => controller.abort(), 10000);
       
       const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
         signal: controller.signal
@@ -1069,57 +1098,77 @@ class D3GlobeElement extends HTMLElement {
         .polygonAltitude(0.01)
         .polygonSideColorDarker(0.3);
       
-      // Setup smart scrolling AFTER globe is fully initialized
-      const container = this.shadowRoot.getElementById('globeViz');
-      if (container && this.globe) {
-        this.setupSmartScrolling(this.globe.controls(), container);
-      }
+      console.log('✅ Countries rendered successfully');
       
-      // Hide loading indicator
+      // CRITICAL: Hide loading indicator IMMEDIATELY after successful render
       if (loading) {
         loading.style.display = 'none';
+        loading.textContent = ''; // Clear any error messages
       }
       
       console.log('✅ Globe ready with ALL countries (including India, Asia, etc.)');
       
-      // Load initial marker data if available
-      const mapData = this.getAttribute('map-data');
-      if (mapData) {
-        console.log('📍 Loading markers...');
-        this.updateMarkers();
+      // Load markers in separate try-catch (non-critical - don't trigger retry)
+      try {
+        const mapData = this.getAttribute('map-data');
+        if (mapData) {
+          console.log('📍 Loading markers...');
+          this.updateMarkers();
+        }
+      } catch (markerError) {
+        console.warn('⚠️ Marker loading failed (non-critical):', markerError);
       }
       
+      // Return success (smart scrolling setup will be done by initializeGlobe)
+      return true;
+      
     } catch (error) {
-      console.error('❌ Error loading countries:', error);
+      console.error('❌ Error loading countries (attempt ' + (retryCount + 1) + '):', error);
       
       // Retry logic
       if (retryCount < maxRetries) {
         console.log(`🔄 Retry ${retryCount + 1}/${maxRetries}...`);
+        
         if (loading) {
-          loading.textContent = `Loading map data... (retry ${retryCount + 1}/${maxRetries})`;
+          loading.textContent = `Loading... (retry ${retryCount + 1}/${maxRetries})`;
+          loading.style.color = '#ffd700'; // Yellow color for retry
+          loading.style.display = 'block';
         }
         
-        // Wait before retry
+        // Wait before retry (progressive delay)
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         
+        // Recursive retry
         return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
       }
       
-      // Max retries exceeded
+      // Max retries exceeded - show final error
       console.error('❌ Failed to load countries after', maxRetries, 'attempts');
       
       if (loading) {
-        loading.textContent = 'Unable to load map data. Please refresh the page.';
+        loading.textContent = 'Unable to load map. Click to refresh.';
         loading.style.color = '#ff6b6b';
         loading.style.fontSize = '14px';
+        loading.style.display = 'block';
+        loading.style.cursor = 'pointer';
+        
+        // Add click to refresh functionality
+        loading.onclick = () => window.location.reload();
       }
       
       // Still try to load markers if available (globe works without countries)
-      const mapData = this.getAttribute('map-data');
-      if (mapData) {
-        console.log('📍 Loading markers without country data...');
-        this.updateMarkers();
+      try {
+        const mapData = this.getAttribute('map-data');
+        if (mapData) {
+          console.log('📍 Loading markers without country data...');
+          this.updateMarkers();
+        }
+      } catch (markerError) {
+        console.warn('⚠️ Failed to load markers:', markerError);
       }
+      
+      // Return failure
+      return false;
     }
   }
 
