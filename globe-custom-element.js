@@ -775,14 +775,14 @@ class D3GlobeElement extends HTMLElement {
       .atmosphereColor(countryStroke || '#667eea')
       .atmosphereAltitude(0.15);
     
-    // Update country colors
+    // Update country colors - SWITCHED TO POLYGONS
     if (this.countriesData) {
       this.globe
-        .hexPolygonsData(this.countriesData.features)
-        .hexPolygonResolution(3)
-        .hexPolygonMargin(0.3)
-        .hexPolygonColor(() => countryFill || '#ffffff')
-        .hexPolygonAltitude(0.01);
+        .polygonsData(this.countriesData.features)
+        .polygonCapColor(() => countryFill || '#ffffff')
+        .polygonSideColor(() => 'rgba(0,0,0,0.1)') // Slight depth effect
+        .polygonStrokeColor(() => countryStroke || '#667eea')
+        .polygonAltitude(0.01);
     }
     
     // Update markers with new colors
@@ -967,20 +967,21 @@ class D3GlobeElement extends HTMLElement {
     // Load countries data
     try {
       console.log('📥 Loading countries data...');
-      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      // CHANGED: Using 50m data instead of 110m for better resolution
+      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
       const worldData = await response.json();
       
       // Convert TopoJSON to GeoJSON
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
-      // Display countries
+      // Display countries - SWITCHED FROM HEXPOLYGONS TO POLYGONS
       this.globe
-        .hexPolygonsData(this.countriesData.features)
-        .hexPolygonResolution(3)
-        .hexPolygonMargin(0.3)
-        .hexPolygonColor(() => countryFill || '#ffffff')
-        .hexPolygonAltitude(0.01);
+        .polygonsData(this.countriesData.features)
+        .polygonCapColor(() => countryFill || '#ffffff')
+        .polygonSideColor(() => 'rgba(0,0,0,0.1)') // Slight depth effect
+        .polygonStrokeColor(() => countryStroke || '#667eea')
+        .polygonAltitude(0.01);
       
       loading.style.display = 'none';
       
