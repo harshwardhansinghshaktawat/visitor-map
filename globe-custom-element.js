@@ -293,6 +293,8 @@ class D3GlobeElement extends HTMLElement {
 
       <div class="globe-container">
         <div class="globe-wrapper" id="globeWrapper">
+          <div id="globalTooltip" class="global-tooltip"></div>
+          
           <div class="loading" id="loading">${t.loading}</div>
           <div id="globeViz"></div>
           
@@ -593,6 +595,31 @@ class D3GlobeElement extends HTMLElement {
         color: ${titleColor};
       }
       
+      .global-tooltip {
+        position: fixed;
+        background: ${tooltipBg};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 100000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.1);
+        white-space: nowrap;
+        transform: translate(-50%, -100%);
+        margin-top: -10px;
+      }
+      
+      .global-tooltip.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+      
       /* Responsive Design */
       @media (max-width: 1024px) {
         .bottom-stats {
@@ -775,14 +802,15 @@ class D3GlobeElement extends HTMLElement {
       .atmosphereColor(countryStroke || '#667eea')
       .atmosphereAltitude(0.15);
     
-    // Update country colors - SWITCHED TO POLYGONS
+    // Update country colors using POLYGONS for accurate rendering
     if (this.countriesData) {
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
-        .polygonSideColor(() => 'rgba(0,0,0,0.1)') // Slight depth effect
+        .polygonSideColor(() => countryFill || '#ffffff')
         .polygonStrokeColor(() => countryStroke || '#667eea')
-        .polygonAltitude(0.01);
+        .polygonAltitude(0.01)
+        .polygonSideColorDarker(0.3);
     }
     
     // Update markers with new colors
@@ -964,28 +992,28 @@ class D3GlobeElement extends HTMLElement {
     this.globe.controls().minDistance = 101;
     this.globe.controls().maxDistance = 500;
     
-    // Load countries data
+    // Load countries data - CORRECTED VERSION
     try {
       console.log('📥 Loading countries data...');
-      // CHANGED: Using 50m data instead of 110m for better resolution
-      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
       const worldData = await response.json();
       
       // Convert TopoJSON to GeoJSON
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
-      // Display countries - SWITCHED FROM HEXPOLYGONS TO POLYGONS
+      // Display countries using POLYGONS (more accurate than hexagons)
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
-        .polygonSideColor(() => 'rgba(0,0,0,0.1)') // Slight depth effect
+        .polygonSideColor(() => countryFill || '#ffffff')
         .polygonStrokeColor(() => countryStroke || '#667eea')
-        .polygonAltitude(0.01);
+        .polygonAltitude(0.01)
+        .polygonSideColorDarker(0.3);
       
       loading.style.display = 'none';
       
-      console.log('✅ Globe initialized with countries');
+      console.log('✅ Globe initialized with ALL countries (including India, Asia, etc.)');
       
       // Load initial data if available
       const mapData = this.getAttribute('map-data');
@@ -1035,24 +1063,29 @@ class D3GlobeElement extends HTMLElement {
         totalVisits += location.totalVisits || 0;
       });
       
-      // Create HTML labels for markers with different styles
+      // Get global tooltip element
+      const tooltip = this.shadowRoot.getElementById('globalTooltip');
+      
+      // Create HTML markers - STABLE VERSION
       this.globe
         .htmlElementsData(locations)
         .htmlLat(d => d.lat)
         .htmlLng(d => d.lng)
         .htmlAltitude(0.01)
+        .htmlTransitionDuration(0) // Critical: No animation = no drift
         .htmlElement(d => {
           const el = document.createElement('div');
-          el.style.cssText = 'cursor: pointer; user-select: none; pointer-events: auto;';
+          el.className = 'marker-element';
+          el.style.cssText = 'cursor: pointer; user-select: none; pointer-events: auto; display: inline-block;';
           
           const color = d.isRecent ? markerRecent : markerOld;
           const size = markerSize || 24;
           
-          // Create marker based on style
+          // Create marker HTML based on style - NEVER MODIFIED AFTER CREATION
           if (markerStyle === 'pin') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
-                <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transform-origin: center bottom;">
+                <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); display: block;">
                   <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
                         fill="${color}"/>
                 </svg>
@@ -1060,7 +1093,7 @@ class D3GlobeElement extends HTMLElement {
                   <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
                               justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
@@ -1074,7 +1107,7 @@ class D3GlobeElement extends HTMLElement {
                 ${showVisitCount && d.totalVisits > 1 ? `
                   <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
@@ -1088,7 +1121,7 @@ class D3GlobeElement extends HTMLElement {
                 ${showVisitCount && d.totalVisits > 1 ? `
                   <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10;">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
@@ -1097,14 +1130,14 @@ class D3GlobeElement extends HTMLElement {
           } else if (markerStyle === 'star') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); display: block;">
                   <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
                         fill="${color}" stroke="white" stroke-width="1.5"/>
                 </svg>
                 ${showVisitCount && d.totalVisits > 1 ? `
                   <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
@@ -1112,56 +1145,51 @@ class D3GlobeElement extends HTMLElement {
             `;
           }
           
-          // Add tooltip on hover if enabled
-          if (showTooltip) {
+          // Tooltip handlers - ONLY if enabled
+          if (showTooltip && tooltip) {
             el.addEventListener('mouseenter', () => {
-              el.style.zIndex = '1000';
-              el.innerHTML += `
-                <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); 
-                            background: ${this.styleProps.tooltipBg}; color: white; padding: 12px 16px; 
-                            border-radius: 8px; white-space: nowrap; pointer-events: none; z-index: 10000;
-                            box-shadow: 0 8px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 12px; margin-bottom: 8px;">
-                  <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">Total Visits:</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
-                  </div>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">Unique Visitors:</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
-                  </div>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">Last Visit:</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
-                  </div>
-                  ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">🟢 Active in last 24h</div>` : ''}
+              tooltip.innerHTML = `
+                <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.totalVisitsLabel}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
                 </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.uniqueVisitors}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
+                </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.lastVisit}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
+                </div>
+                ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">${t.activeNow}</div>` : ''}
               `;
+              tooltip.classList.add('visible');
+            });
+            
+            el.addEventListener('mousemove', (e) => {
+              tooltip.style.left = e.clientX + 'px';
+              tooltip.style.top = e.clientY + 'px';
             });
             
             el.addEventListener('mouseleave', () => {
-              el.style.zIndex = 'auto';
-              // Recreate the marker without tooltip
-              const newEl = el.cloneNode(false);
-              newEl.innerHTML = el.querySelector('div').outerHTML;
-              el.parentNode.replaceChild(newEl, el);
+              tooltip.classList.remove('visible');
             });
           }
           
           return el;
         });
       
-      // Add VISIBLE pulse rings for recent visitors
+      // Add pulse rings for recent visitors
       if (showPulse) {
         const ringsData = locations
           .filter(loc => loc.isRecent)
           .map(location => ({
             lat: location.lat,
             lng: location.lng,
-            maxR: 5, // Larger radius
-            propagationSpeed: 3, // Faster
-            repeatPeriod: 1200 // More frequent
+            maxR: 5,
+            propagationSpeed: 3,
+            repeatPeriod: 1200
           }));
         
         this.globe
@@ -1170,7 +1198,7 @@ class D3GlobeElement extends HTMLElement {
           .ringMaxRadius('maxR')
           .ringPropagationSpeed('propagationSpeed')
           .ringRepeatPeriod('repeatPeriod')
-          .ringAltitude(0.015); // Slightly raised for visibility
+          .ringAltitude(0.015);
       } else {
         this.globe.ringsData([]);
       }
