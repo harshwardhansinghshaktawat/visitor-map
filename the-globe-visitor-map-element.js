@@ -10,9 +10,10 @@ class GlobeVisitorMapElement extends HTMLElement {
     this.countries = null;
     this.handleResize = this.handleResize.bind(this);
     this.resizeTimeout = null;
-    this.rotationFrame = null;
+    this.rotationAngle = 0;
     this.autoRotate = true;
     this.isDragging = false;
+    this.markerData = [];
     
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
@@ -66,7 +67,7 @@ class GlobeVisitorMapElement extends HTMLElement {
   disconnectedCallback() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
-    if (this.rotationFrame) cancelAnimationFrame(this.rotationFrame);
+    this.autoRotate = false;
   }
 
   static get observedAttributes() {
@@ -84,31 +85,20 @@ class GlobeVisitorMapElement extends HTMLElement {
         
         if (this.svg) {
           this.updateGlobeStyles();
-          this.updateMarkers();
+          this.renderMarkers();
         }
       } catch (error) {
         console.error('Error parsing style props:', error);
       }
     } else if (name === 'map-data' && this.svg) {
       console.log('🔄 Map data changed, updating markers');
-      this.updateMarkers();
+      this.renderMarkers();
     }
   }
 
   getTranslations() {
     const translations = {
-      en: {
-        mapTitle: '🌍 Live Visitor Globe',
-        cities: 'Cities',
-        totalVisits: 'Total Visits',
-        last24Hours: 'Last 24 Hours',
-        recent: 'Recent',
-        earlier: 'Earlier',
-        totalVisitsLabel: 'Total Visits:',
-        uniqueVisitors: 'Unique Visitors:',
-        lastVisit: 'Last Visit:',
-        activeNow: '🟢 Active in last 24h'
-      },
+      en: { mapTitle: '🌍 Live Visitor Globe', cities: 'Cities', totalVisits: 'Total Visits', last24Hours: 'Last 24 Hours', recent: 'Recent', earlier: 'Earlier', totalVisitsLabel: 'Total Visits:', uniqueVisitors: 'Unique Visitors:', lastVisit: 'Last Visit:', activeNow: '🟢 Active in last 24h' },
       es: { mapTitle: '🌍 Globo de Visitantes en Vivo', cities: 'Ciudades', totalVisits: 'Visitas Totales', last24Hours: 'Últimas 24 Horas', recent: 'Reciente', earlier: 'Anterior', totalVisitsLabel: 'Visitas Totales:', uniqueVisitors: 'Visitantes Únicos:', lastVisit: 'Última Visita:', activeNow: '🟢 Activo en las últimas 24h' },
       fr: { mapTitle: '🌍 Globe des Visiteurs en Direct', cities: 'Villes', totalVisits: 'Visites Totales', last24Hours: 'Dernières 24 Heures', recent: 'Récent', earlier: 'Plus tôt', totalVisitsLabel: 'Visites Totales:', uniqueVisitors: 'Visiteurs Uniques:', lastVisit: 'Dernière Visite:', activeNow: '🟢 Actif dans les dernières 24h' },
       de: { mapTitle: '🌍 Live-Besucherglobus', cities: 'Städte', totalVisits: 'Gesamtbesuche', last24Hours: 'Letzte 24 Stunden', recent: 'Kürzlich', earlier: 'Früher', totalVisitsLabel: 'Gesamtbesuche:', uniqueVisitors: 'Einzigartige Besucher:', lastVisit: 'Letzter Besuch:', activeNow: '🟢 Aktiv in den letzten 24h' },
@@ -524,7 +514,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         if (!this.projection) return;
         const currentScale = this.projection.scale();
         this.projection.scale(currentScale * 1.2);
-        this.redrawGlobe();
+        this.updateGlobe();
       });
     }
     
@@ -533,17 +523,18 @@ class GlobeVisitorMapElement extends HTMLElement {
         if (!this.projection) return;
         const currentScale = this.projection.scale();
         this.projection.scale(currentScale / 1.2);
-        this.redrawGlobe();
+        this.updateGlobe();
       });
     }
     
     if (zoomReset) {
       zoomReset.addEventListener('click', () => {
         if (!this.projection) return;
+        this.rotationAngle = 0;
         const container = this.shadowRoot.getElementById('globeWrapper');
         const size = Math.min(container.clientWidth, container.clientHeight);
         this.projection.scale(size / 2.2).rotate([0, 0]);
-        this.redrawGlobe();
+        this.updateGlobe();
       });
     }
   }
@@ -580,7 +571,6 @@ class GlobeVisitorMapElement extends HTMLElement {
 
   loadScript(src) {
     return new Promise((resolve, reject) => {
-      // Check if already loaded
       if ((src.includes('d3.v7') && window.d3) || (src.includes('topojson') && window.topojson)) {
         resolve();
         return;
@@ -637,7 +627,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       .scale(size / 2.2)
       .translate([width / 2, height / 2])
       .clipAngle(90)
-      .precision(0.1);
+      .rotate([0, 0]);
     
     // Create path generator
     this.path = d3.geoPath().projection(this.projection);
@@ -707,7 +697,8 @@ class GlobeVisitorMapElement extends HTMLElement {
           rotate[0] + event.dx * k,
           rotate[1] - event.dy * k
         ]);
-        this.redrawGlobe();
+        this.rotationAngle = rotate[0] + event.dx * k;
+        this.updateGlobe();
       })
       .on('end', () => {
         this.isDragging = false;
@@ -721,7 +712,7 @@ class GlobeVisitorMapElement extends HTMLElement {
     
     this.svg.call(drag);
     
-    // Start smooth auto-rotation using requestAnimationFrame
+    // Start auto-rotation
     this.startAutoRotation();
     
     loading.style.display = 'none';
@@ -730,54 +721,61 @@ class GlobeVisitorMapElement extends HTMLElement {
     const mapData = this.getAttribute('map-data');
     if (mapData) {
       console.log('📍 Initial map data found, rendering markers');
-      this.updateMarkers();
+      this.renderMarkers();
     }
     
     console.log('✅ Globe initialized');
   }
 
   startAutoRotation() {
-    const rotate = () => {
+    const animate = () => {
       if (this.autoRotate && !this.isDragging) {
+        this.rotationAngle += 0.2;
         const currentRotate = this.projection.rotate();
-        this.projection.rotate([currentRotate[0] + 0.2, currentRotate[1]]);
-        this.redrawGlobe();
+        this.projection.rotate([this.rotationAngle, currentRotate[1]]);
+        this.updateGlobe();
       }
-      this.rotationFrame = requestAnimationFrame(rotate);
+      
+      if (this.autoRotate || this.isDragging) {
+        requestAnimationFrame(animate);
+      }
     };
     
-    rotate();
+    requestAnimationFrame(animate);
   }
 
-  redrawGlobe() {
+  updateGlobe() {
     if (!this.countries || !this.path) return;
     
     // Update countries
     this.countries.selectAll('path').attr('d', this.path);
     
-    // Update markers if they exist
-    if (this.markers) {
-      this.updateMarkerPositions();
-    }
+    // Update markers
+    this.updateMarkerPositions();
   }
 
   updateMarkerPositions() {
-    if (!this.markers) return;
+    if (!this.markers || this.markerData.length === 0) return;
+    
+    const self = this;
     
     this.markers.selectAll('.marker-group').each(function(d) {
-      const coords = [d.lng, d.lat];
-      const projected = this.projection(coords);
+      const point = self.projection([d.lng, d.lat]);
       
-      if (projected) {
-        // Check if point is on the visible side of the globe
-        const distance = d3.geoDistance(coords, this.projection.invert([this.projection.translate()[0], this.projection.translate()[1]]));
-        const visible = distance < Math.PI / 2;
+      if (point) {
+        // Simple visibility check using clipAngle
+        const rotate = self.projection.rotate();
+        const lambda = d.lng + rotate[0];
+        const phi = d.lat + rotate[1];
+        
+        // Check if the point is on the visible hemisphere
+        const visible = d3.geoDistance([d.lng, d.lat], self.projection.invert(self.projection.translate())) < Math.PI / 2;
         
         d3.select(this)
           .style('display', visible ? 'block' : 'none')
-          .attr('transform', `translate(${projected[0]},${projected[1]})`);
+          .attr('transform', `translate(${point[0]},${point[1]})`);
       }
-    }.bind(this));
+    });
   }
 
   updateGlobeStyles() {
@@ -805,7 +803,7 @@ class GlobeVisitorMapElement extends HTMLElement {
     console.log('✅ Globe styles updated');
   }
 
-  updateMarkers() {
+  renderMarkers() {
     if (!this.markers) {
       console.log('⏳ Globe not loaded yet');
       return;
@@ -820,13 +818,16 @@ class GlobeVisitorMapElement extends HTMLElement {
     try {
       const locations = JSON.parse(mapData);
       const t = this.getTranslations();
-      console.log('\n========== UPDATING GLOBE MARKERS ==========');
+      console.log('\n========== RENDERING GLOBE MARKERS ==========');
       console.log('📍 Total cities:', locations.length);
       
       if (locations.length === 0) {
         console.log('⚠️ No locations to display');
         return;
       }
+      
+      // Store marker data
+      this.markerData = locations;
       
       const { 
         markerRecent, markerOld, markerSize, showPulse, showVisitCount, showTooltip,
@@ -845,26 +846,24 @@ class GlobeVisitorMapElement extends HTMLElement {
       // Clear existing markers
       this.markers.selectAll('*').remove();
       
+      const self = this;
+      
       // Create marker groups
       const markerGroups = this.markers.selectAll('.marker-group')
         .data(locations)
         .join('g')
-        .attr('class', 'marker-group');
-      
-      // Position markers initially
-      markerGroups.each(function(d) {
-        const coords = [d.lng, d.lat];
-        const projected = this.projection(coords);
-        
-        if (projected) {
-          const distance = d3.geoDistance(coords, this.projection.invert([this.projection.translate()[0], this.projection.translate()[1]]));
-          const visible = distance < Math.PI / 2;
+        .attr('class', 'marker-group')
+        .each(function(d) {
+          const point = self.projection([d.lng, d.lat]);
           
-          d3.select(this)
-            .style('display', visible ? 'block' : 'none')
-            .attr('transform', `translate(${projected[0]},${projected[1]})`);
-        }
-      }.bind(this));
+          if (point) {
+            const visible = d3.geoDistance([d.lng, d.lat], self.projection.invert(self.projection.translate())) < Math.PI / 2;
+            
+            d3.select(this)
+              .style('display', visible ? 'block' : 'none')
+              .attr('transform', `translate(${point[0]},${point[1]})`);
+          }
+        });
       
       // Add pulse circles for recent visitors
       if (showPulse) {
@@ -876,7 +875,7 @@ class GlobeVisitorMapElement extends HTMLElement {
           .attr('opacity', 0);
       }
       
-      // Add main marker circles - LARGER AND MORE VISIBLE
+      // Add main marker circles
       markerGroups.append('circle')
         .attr('class', 'marker-circle')
         .attr('r', markerSize / 2.5)
@@ -969,7 +968,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       this.shadowRoot.getElementById('recentCount').textContent = recentCount;
       
     } catch (error) {
-      console.error('❌ Error updating markers:', error);
+      console.error('❌ Error rendering markers:', error);
     }
   }
 
@@ -999,7 +998,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         .attr('cy', height / 2)
         .attr('r', this.projection.scale());
       
-      this.redrawGlobe();
+      this.updateGlobe();
     }, 250);
   }
 }
