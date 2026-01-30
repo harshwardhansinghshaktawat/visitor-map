@@ -21,9 +21,9 @@ class GlobeVisitorMapElement extends HTMLElement {
     return {
       bgColor1: '#667eea',
       bgColor2: '#764ba2',
-      countryFill: '#ffffff',
+      countryFill: '#e8f4f8',
       countryStroke: '#667eea',
-      countryHover: '#f0f0f0',
+      countryHover: '#d1e7f0',
       markerRecent: '#48bb78',
       markerOld: '#4299e1',
       markerStyle: 'pin',
@@ -105,162 +105,19 @@ class GlobeVisitorMapElement extends HTMLElement {
         lastVisit: 'Last Visit:',
         activeNow: '🟢 Active in last 24h'
       },
-      es: {
-        mapTitle: '🌍 Globo de Visitantes en Vivo',
-        cities: 'Ciudades',
-        totalVisits: 'Visitas Totales',
-        last24Hours: 'Últimas 24 Horas',
-        recent: 'Reciente',
-        earlier: 'Anterior',
-        totalVisitsLabel: 'Visitas Totales:',
-        uniqueVisitors: 'Visitantes Únicos:',
-        lastVisit: 'Última Visita:',
-        activeNow: '🟢 Activo en las últimas 24h'
-      },
-      fr: {
-        mapTitle: '🌍 Globe des Visiteurs en Direct',
-        cities: 'Villes',
-        totalVisits: 'Visites Totales',
-        last24Hours: 'Dernières 24 Heures',
-        recent: 'Récent',
-        earlier: 'Plus tôt',
-        totalVisitsLabel: 'Visites Totales:',
-        uniqueVisitors: 'Visiteurs Uniques:',
-        lastVisit: 'Dernière Visite:',
-        activeNow: '🟢 Actif dans les dernières 24h'
-      },
-      de: {
-        mapTitle: '🌍 Live-Besucherglobus',
-        cities: 'Städte',
-        totalVisits: 'Gesamtbesuche',
-        last24Hours: 'Letzte 24 Stunden',
-        recent: 'Kürzlich',
-        earlier: 'Früher',
-        totalVisitsLabel: 'Gesamtbesuche:',
-        uniqueVisitors: 'Einzigartige Besucher:',
-        lastVisit: 'Letzter Besuch:',
-        activeNow: '🟢 Aktiv in den letzten 24h'
-      },
-      zh: {
-        mapTitle: '🌍 实时访客地球仪',
-        cities: '城市',
-        totalVisits: '总访问量',
-        last24Hours: '过去24小时',
-        recent: '最近',
-        earlier: '较早',
-        totalVisitsLabel: '总访问量：',
-        uniqueVisitors: '独立访客：',
-        lastVisit: '最后访问：',
-        activeNow: '🟢 最近24小时活跃'
-      },
-      ja: {
-        mapTitle: '🌍 リアルタイム訪問者グローブ',
-        cities: '都市',
-        totalVisits: '総訪問数',
-        last24Hours: '過去24時間',
-        recent: '最近',
-        earlier: '以前',
-        totalVisitsLabel: '総訪問数：',
-        uniqueVisitors: 'ユニーク訪問者：',
-        lastVisit: '最終訪問：',
-        activeNow: '🟢 過去24時間にアクティブ'
-      },
-      ko: {
-        mapTitle: '🌍 실시간 방문자 지구본',
-        cities: '도시',
-        totalVisits: '총 방문 수',
-        last24Hours: '지난 24시간',
-        recent: '최근',
-        earlier: '이전',
-        totalVisitsLabel: '총 방문 수:',
-        uniqueVisitors: '고유 방문자:',
-        lastVisit: '마지막 방문:',
-        activeNow: '🟢 지난 24시간 동안 활성'
-      },
-      ar: {
-        mapTitle: '🌍 كرة أرضية للزوار المباشرة',
-        cities: 'مدن',
-        totalVisits: 'إجمالي الزيارات',
-        last24Hours: 'آخر 24 ساعة',
-        recent: 'حديث',
-        earlier: 'سابق',
-        totalVisitsLabel: 'إجمالي الزيارات:',
-        uniqueVisitors: 'زوار فريدون:',
-        lastVisit: 'آخر زيارة:',
-        activeNow: '🟢 نشط في آخر 24 ساعة'
-      },
-      tr: {
-        mapTitle: '🌍 Canlı Ziyaretçi Küresi',
-        cities: 'Şehirler',
-        totalVisits: 'Toplam Ziyaret',
-        last24Hours: 'Son 24 Saat',
-        recent: 'Yakın Tarih',
-        earlier: 'Önceki',
-        totalVisitsLabel: 'Toplam Ziyaret:',
-        uniqueVisitors: 'Benzersiz Ziyaretçiler:',
-        lastVisit: 'Son Ziyaret:',
-        activeNow: '🟢 Son 24 saatte aktif'
-      },
-      pt: {
-        mapTitle: '🌍 Globo de Visitantes ao Vivo',
-        cities: 'Cidades',
-        totalVisits: 'Visitas Totais',
-        last24Hours: 'Últimas 24 Horas',
-        recent: 'Recente',
-        earlier: 'Anterior',
-        totalVisitsLabel: 'Visitas Totais:',
-        uniqueVisitors: 'Visitantes Únicos:',
-        lastVisit: 'Última Visita:',
-        activeNow: '🟢 Ativo nas últimas 24h'
-      },
-      ru: {
-        mapTitle: '🌍 Глобус посетителей в реальном времени',
-        cities: 'Города',
-        totalVisits: 'Всего посещений',
-        last24Hours: 'За последние 24 часа',
-        recent: 'Недавние',
-        earlier: 'Ранее',
-        totalVisitsLabel: 'Всего посещений:',
-        uniqueVisitors: 'Уникальные посетители:',
-        lastVisit: 'Последний визит:',
-        activeNow: '🟢 Активен за последние 24ч'
-      },
-      it: {
-        mapTitle: '🌍 Globo Visitatori in Tempo Reale',
-        cities: 'Città',
-        totalVisits: 'Visite Totali',
-        last24Hours: 'Ultime 24 Ore',
-        recent: 'Recente',
-        earlier: 'Precedente',
-        totalVisitsLabel: 'Visite Totali:',
-        uniqueVisitors: 'Visitatori Unici:',
-        lastVisit: 'Ultima Visita:',
-        activeNow: '🟢 Attivo nelle ultime 24h'
-      },
-      nl: {
-        mapTitle: '🌍 Live Bezoekers Globe',
-        cities: 'Steden',
-        totalVisits: 'Totale Bezoeken',
-        last24Hours: 'Laatste 24 Uur',
-        recent: 'Recent',
-        earlier: 'Eerder',
-        totalVisitsLabel: 'Totale Bezoeken:',
-        uniqueVisitors: 'Unieke Bezoekers:',
-        lastVisit: 'Laatste Bezoek:',
-        activeNow: '🟢 Actief in de laatste 24u'
-      },
-      hi: {
-        mapTitle: '🌍 लाइव आगंतुक ग्लोब',
-        cities: 'शहर',
-        totalVisits: 'कुल विज़िट',
-        last24Hours: 'पिछले 24 घंटे',
-        recent: 'हाल का',
-        earlier: 'पहले',
-        totalVisitsLabel: 'कुल विज़िट:',
-        uniqueVisitors: 'अद्वितीय आगंतुक:',
-        lastVisit: 'अंतिम विज़िट:',
-        activeNow: '🟢 पिछले 24 घंटों में सक्रिय'
-      }
+      es: { mapTitle: '🌍 Globo de Visitantes en Vivo', cities: 'Ciudades', totalVisits: 'Visitas Totales', last24Hours: 'Últimas 24 Horas', recent: 'Reciente', earlier: 'Anterior', totalVisitsLabel: 'Visitas Totales:', uniqueVisitors: 'Visitantes Únicos:', lastVisit: 'Última Visita:', activeNow: '🟢 Activo en las últimas 24h' },
+      fr: { mapTitle: '🌍 Globe des Visiteurs en Direct', cities: 'Villes', totalVisits: 'Visites Totales', last24Hours: 'Dernières 24 Heures', recent: 'Récent', earlier: 'Plus tôt', totalVisitsLabel: 'Visites Totales:', uniqueVisitors: 'Visiteurs Uniques:', lastVisit: 'Dernière Visite:', activeNow: '🟢 Actif dans les dernières 24h' },
+      de: { mapTitle: '🌍 Live-Besucherglobus', cities: 'Städte', totalVisits: 'Gesamtbesuche', last24Hours: 'Letzte 24 Stunden', recent: 'Kürzlich', earlier: 'Früher', totalVisitsLabel: 'Gesamtbesuche:', uniqueVisitors: 'Einzigartige Besucher:', lastVisit: 'Letzter Besuch:', activeNow: '🟢 Aktiv in den letzten 24h' },
+      zh: { mapTitle: '🌍 实时访客地球仪', cities: '城市', totalVisits: '总访问量', last24Hours: '过去24小时', recent: '最近', earlier: '较早', totalVisitsLabel: '总访问量：', uniqueVisitors: '独立访客：', lastVisit: '最后访问：', activeNow: '🟢 最近24小时活跃' },
+      ja: { mapTitle: '🌍 リアルタイム訪問者グローブ', cities: '都市', totalVisits: '総訪問数', last24Hours: '過去24時間', recent: '最近', earlier: '以前', totalVisitsLabel: '総訪問数：', uniqueVisitors: 'ユニーク訪問者：', lastVisit: '最終訪問：', activeNow: '🟢 過去24時間にアクティブ' },
+      ko: { mapTitle: '🌍 실시간 방문자 지구본', cities: '도시', totalVisits: '총 방문 수', last24Hours: '지난 24시간', recent: '최근', earlier: '이전', totalVisitsLabel: '총 방문 수:', uniqueVisitors: '고유 방문자:', lastVisit: '마지막 방문:', activeNow: '🟢 지난 24시간 동안 활성' },
+      ar: { mapTitle: '🌍 كرة أرضية للزوار المباشرة', cities: 'مدن', totalVisits: 'إجمالي الزيارات', last24Hours: 'آخر 24 ساعة', recent: 'حديث', earlier: 'سابق', totalVisitsLabel: 'إجمالي الزيارات:', uniqueVisitors: 'زوار فريدون:', lastVisit: 'آخر زيارة:', activeNow: '🟢 نشط في آخر 24 ساعة' },
+      tr: { mapTitle: '🌍 Canlı Ziyaretçi Küresi', cities: 'Şehirler', totalVisits: 'Toplam Ziyaret', last24Hours: 'Son 24 Saat', recent: 'Yakın Tarih', earlier: 'Önceki', totalVisitsLabel: 'Toplam Ziyaret:', uniqueVisitors: 'Benzersiz Ziyaretçiler:', lastVisit: 'Son Ziyaret:', activeNow: '🟢 Son 24 saatte aktif' },
+      pt: { mapTitle: '🌍 Globo de Visitantes ao Vivo', cities: 'Cidades', totalVisits: 'Visitas Totais', last24Hours: 'Últimas 24 Horas', recent: 'Recente', earlier: 'Anterior', totalVisitsLabel: 'Visitas Totais:', uniqueVisitors: 'Visitantes Únicos:', lastVisit: 'Última Visita:', activeNow: '🟢 Ativo nas últimas 24h' },
+      ru: { mapTitle: '🌍 Глобус посетителей в реальном времени', cities: 'Города', totalVisits: 'Всего посещений', last24Hours: 'За последние 24 часа', recent: 'Недавние', earlier: 'Ранее', totalVisitsLabel: 'Всего посещений:', uniqueVisitors: 'Уникальные посетители:', lastVisit: 'Последний визит:', activeNow: '🟢 Активен за последние 24ч' },
+      it: { mapTitle: '🌍 Globo Visitatori in Tempo Reale', cities: 'Città', totalVisits: 'Visite Totali', last24Hours: 'Ultime 24 Ore', recent: 'Recente', earlier: 'Precedente', totalVisitsLabel: 'Visite Totali:', uniqueVisitors: 'Visitatori Unici:', lastVisit: 'Ultima Visita:', activeNow: '🟢 Attivo nelle ultime 24h' },
+      nl: { mapTitle: '🌍 Live Bezoekers Globe', cities: 'Steden', totalVisits: 'Totale Bezoeken', last24Hours: 'Laatste 24 Uur', recent: 'Recent', earlier: 'Eerder', totalVisitsLabel: 'Totale Bezoeken:', uniqueVisitors: 'Unieke Bezoekers:', lastVisit: 'Laatste Bezoek:', activeNow: '🟢 Actief in de laatste 24u' },
+      hi: { mapTitle: '🌍 लाइव आगंतुक ग्लोब', cities: 'शहर', totalVisits: 'कुल विज़िट', last24Hours: 'पिछले 24 घंटे', recent: 'हाल का', earlier: 'पहले', totalVisitsLabel: 'कुल विज़िट:', uniqueVisitors: 'अद्वितीय आगंतुक:', lastVisit: 'अंतिम विज़िट:', activeNow: '🟢 पिछले 24 घंटों में सक्रिय' }
     };
     
     const lang = this.styleProps.language || 'en';
@@ -578,6 +435,11 @@ class GlobeVisitorMapElement extends HTMLElement {
         color: ${titleColor};
       }
       
+      /* Country styles */
+      .country {
+        transition: fill 0.2s ease;
+      }
+      
       /* Pulse animation for markers */
       @keyframes pulse {
         0% {
@@ -684,38 +546,50 @@ class GlobeVisitorMapElement extends HTMLElement {
 
   async loadD3() {
     try {
-      console.log('📦 Loading D3.js library...');
+      console.log('📦 Loading D3.js and TopoJSON...');
       
+      // Load D3.js
       if (!window.d3) {
         await this.loadScript('https://d3js.org/d3.v7.min.js');
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      if (!window.d3) {
-        throw new Error('D3.js failed to load');
+      // Load TopoJSON
+      if (!window.topojson) {
+        await this.loadScript('https://unpkg.com/topojson@3.0.2/dist/topojson.min.js');
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      console.log('✅ D3.js loaded');
+      
+      if (!window.d3 || !window.topojson) {
+        throw new Error('D3.js or TopoJSON failed to load');
+      }
+      console.log('✅ D3.js and TopoJSON loaded');
       
       await this.initializeGlobe();
       window.addEventListener('resize', this.handleResize);
       
     } catch (error) {
-      console.error('❌ Error loading D3.js:', error);
+      console.error('❌ Error loading libraries:', error);
       this.shadowRoot.getElementById('loading').textContent = 'Error loading globe';
     }
   }
 
   loadScript(src) {
     return new Promise((resolve, reject) => {
-      if (src.includes('d3.v7') && window.d3) {
+      // Check if already loaded
+      if ((src.includes('d3.v7') && window.d3) || (src.includes('topojson') && window.topojson)) {
         resolve();
         return;
       }
       
       const existingScript = document.querySelector(`script[src="${src}"]`);
       if (existingScript) {
-        existingScript.addEventListener('load', () => resolve());
-        existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+        if (existingScript.dataset.loaded === 'true') {
+          resolve();
+        } else {
+          existingScript.addEventListener('load', () => resolve());
+          existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+        }
         return;
       }
       
@@ -725,6 +599,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       
       script.onload = () => {
         console.log(`✅ Script loaded: ${src}`);
+        script.dataset.loaded = 'true';
         resolve();
       };
       
@@ -746,6 +621,8 @@ class GlobeVisitorMapElement extends HTMLElement {
     const height = container.clientHeight || 600;
     const size = Math.min(width, height);
     
+    const { countryFill, countryStroke } = this.styleProps;
+    
     // Create SVG
     this.svg = d3.select(this.shadowRoot.getElementById('globeSvg'))
       .attr('width', width)
@@ -753,24 +630,23 @@ class GlobeVisitorMapElement extends HTMLElement {
     
     // Create projection (orthographic for 3D globe effect)
     this.projection = d3.geoOrthographic()
-      .scale(size / 2)
+      .scale(size / 2.2)
       .translate([width / 2, height / 2])
-      .clipAngle(90);
+      .clipAngle(90)
+      .precision(0.1);
     
     // Create path generator
     this.path = d3.geoPath().projection(this.projection);
     
-    // Create globe background (ocean)
-    const { countryFill, countryStroke } = this.styleProps;
-    
+    // Create globe background sphere
     this.svg.append('circle')
       .attr('class', 'globe-sphere')
       .attr('cx', width / 2)
       .attr('cy', height / 2)
       .attr('r', this.projection.scale())
-      .attr('fill', countryFill)
+      .attr('fill', '#add8e6')
       .attr('stroke', countryStroke)
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 1.5);
     
     // Create groups for countries and markers
     this.globe = this.svg.append('g').attr('class', 'globe-group');
@@ -779,9 +655,17 @@ class GlobeVisitorMapElement extends HTMLElement {
     
     // Load world data
     try {
+      console.log('🌍 Loading world map data...');
       const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-      const countries = topojson.feature(world, world.objects.countries);
       
+      if (!world || !world.objects || !world.objects.countries) {
+        throw new Error('Invalid world data structure');
+      }
+      
+      const countries = topojson.feature(world, world.objects.countries);
+      console.log('✅ World data loaded, countries:', countries.features.length);
+      
+      // Draw countries
       this.countries.selectAll('path')
         .data(countries.features)
         .join('path')
@@ -790,21 +674,27 @@ class GlobeVisitorMapElement extends HTMLElement {
         .attr('fill', countryFill)
         .attr('stroke', countryStroke)
         .attr('stroke-width', 0.5)
+        .style('cursor', 'pointer')
         .on('mouseenter', function() {
           d3.select(this).attr('fill', this.styleProps.countryHover);
         }.bind(this))
         .on('mouseleave', function() {
           d3.select(this).attr('fill', countryFill);
-        });
+        }.bind(this));
       
-      console.log('✅ World map loaded');
+      console.log('✅ Countries rendered');
     } catch (error) {
-      console.error('Error loading world data:', error);
+      console.error('❌ Error loading world data:', error);
+      loading.textContent = 'Error loading map data';
+      return;
     }
     
     // Setup drag behavior
+    let autoRotate = true;
+    
     const drag = d3.drag()
       .on('start', () => {
+        autoRotate = false;
         this.svg.style('cursor', 'grabbing');
       })
       .on('drag', (event) => {
@@ -818,26 +708,21 @@ class GlobeVisitorMapElement extends HTMLElement {
       })
       .on('end', () => {
         this.svg.style('cursor', 'grab');
+        setTimeout(() => { autoRotate = true; }, 2000);
       });
     
     this.svg.call(drag);
     
     // Auto-rotation
-    let autoRotate = true;
     const rotate = () => {
       if (autoRotate) {
         const currentRotate = this.projection.rotate();
-        this.projection.rotate([currentRotate[0] + 0.2, currentRotate[1]]);
+        this.projection.rotate([currentRotate[0] + 0.3, currentRotate[1]]);
         this.redrawGlobe();
       }
     };
     
-    setInterval(rotate, 30);
-    
-    this.svg.on('mousedown', () => { autoRotate = false; });
-    this.svg.on('mouseup', () => {
-      setTimeout(() => { autoRotate = true; }, 2000);
-    });
+    setInterval(rotate, 50);
     
     loading.style.display = 'none';
     
@@ -874,21 +759,22 @@ class GlobeVisitorMapElement extends HTMLElement {
     
     const { countryFill, countryStroke, countryHover } = this.styleProps;
     
-    // Update globe sphere
+    // Update globe sphere (ocean)
     this.svg.select('.globe-sphere')
-      .attr('fill', countryFill)
       .attr('stroke', countryStroke);
     
     // Update countries
-    this.countries.selectAll('path')
-      .attr('fill', countryFill)
-      .attr('stroke', countryStroke)
-      .on('mouseenter', function() {
-        d3.select(this).attr('fill', countryHover);
-      })
-      .on('mouseleave', function() {
-        d3.select(this).attr('fill', countryFill);
-      });
+    if (this.countries) {
+      this.countries.selectAll('path')
+        .attr('fill', countryFill)
+        .attr('stroke', countryStroke)
+        .on('mouseenter', function() {
+          d3.select(this).attr('fill', countryHover);
+        })
+        .on('mouseleave', function() {
+          d3.select(this).attr('fill', countryFill);
+        });
+    }
     
     console.log('✅ Globe styles updated');
   }
@@ -961,10 +847,11 @@ class GlobeVisitorMapElement extends HTMLElement {
       // Add main marker circles
       markerGroups.append('circle')
         .attr('class', 'marker-circle')
-        .attr('r', markerSize / 4)
+        .attr('r', markerSize / 3.5)
         .attr('fill', d => d.isRecent ? markerRecent : markerOld)
         .attr('stroke', 'white')
-        .attr('stroke-width', 2)
+        .attr('stroke-width', 2.5)
+        .attr('opacity', 0.95)
         .style('cursor', 'pointer');
       
       // Add visit count badges
@@ -978,10 +865,10 @@ class GlobeVisitorMapElement extends HTMLElement {
             
             // Badge background
             group.append('circle')
-              .attr('r', 10)
+              .attr('r', 11)
               .attr('fill', badgeBg)
               .attr('stroke', d.isRecent ? markerRecent : markerOld)
-              .attr('stroke-width', 1.5);
+              .attr('stroke-width', 2);
             
             // Badge text
             group.append('text')
@@ -1040,6 +927,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       console.log('Cities:', locations.length);
       console.log('Total Visits:', totalVisits);
       console.log('Recent (24h):', recentCount);
+      console.log('Markers created:', markerGroups.size());
       console.log('======================================\n');
       
       // Update statistics
@@ -1070,7 +958,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         .attr('height', height);
       
       this.projection
-        .scale(size / 2)
+        .scale(size / 2.2)
         .translate([width / 2, height / 2]);
       
       this.svg.select('.globe-sphere')
