@@ -434,6 +434,18 @@ class D3GlobeElement extends HTMLElement {
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         z-index: 10;
         pointer-events: none;
+        text-align: center;
+        max-width: 80%;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
       }
       
       .controls-overlay {
@@ -969,40 +981,86 @@ class D3GlobeElement extends HTMLElement {
     
     const { bgColor1, countryFill, countryStroke } = this.styleProps;
     
-    // Initialize Globe
-    this.globe = window.Globe({ animateIn: true })
-      (container)
-      .backgroundColor(bgColor1 || '#667eea')
-      .globeMaterial(new window.THREE.MeshPhongMaterial({
-        color: bgColor1 || '#667eea',
-        emissive: bgColor1 || '#667eea',
-        emissiveIntensity: 0.05,
-        shininess: 0.7
-      }))
-      .atmosphereColor(countryStroke || '#667eea')
-      .atmosphereAltitude(0.15)
-      .width(container.clientWidth)
-      .height(container.clientHeight)
-      .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
-    
-    // Configure controls
-    this.globe.controls().autoRotate = true;
-    this.globe.controls().autoRotateSpeed = 0.5;
-    this.globe.controls().enableZoom = true;
-    this.globe.controls().minDistance = 101;
-    this.globe.controls().maxDistance = 500;
-    
-    // Load countries data - CORRECTED VERSION
     try {
-      console.log('📥 Loading countries data...');
-      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      // Initialize Globe first
+      this.globe = window.Globe({ animateIn: true })
+        (container)
+        .backgroundColor(bgColor1 || '#667eea')
+        .globeMaterial(new window.THREE.MeshPhongMaterial({
+          color: bgColor1 || '#667eea',
+          emissive: bgColor1 || '#667eea',
+          emissiveIntensity: 0.05,
+          shininess: 0.7
+        }))
+        .atmosphereColor(countryStroke || '#667eea')
+        .atmosphereAltitude(0.15)
+        .width(container.clientWidth)
+        .height(container.clientHeight)
+        .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
+      
+      // Configure controls
+      this.globe.controls().autoRotate = true;
+      this.globe.controls().autoRotateSpeed = 0.5;
+      this.globe.controls().enableZoom = true;
+      this.globe.controls().minDistance = 101;
+      this.globe.controls().maxDistance = 500;
+      
+      console.log('✅ Globe initialized, loading countries...');
+      
+      // Load countries data with retry logic
+      await this.loadCountriesData(loading, countryFill, countryStroke);
+      
+    } catch (error) {
+      console.error('❌ Critical error initializing globe:', error);
+      if (loading) {
+        loading.textContent = 'Failed to initialize globe';
+        loading.style.color = '#ff6b6b';
+      }
+    }
+  }
+
+  async loadCountriesData(loading, countryFill, countryStroke, retryCount = 0) {
+    const maxRetries = 3;
+    
+    try {
+      // Ensure TopoJSON is loaded
+      if (!window.topojson) {
+        console.log('⏳ Waiting for TopoJSON to load...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!window.topojson && retryCount < maxRetries) {
+          console.log('🔄 Retrying TopoJSON check...');
+          return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
+        }
+        
+        if (!window.topojson) {
+          throw new Error('TopoJSON library not loaded');
+        }
+      }
+      
+      console.log('📥 Fetching countries data...');
+      
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const worldData = await response.json();
       
       // Convert TopoJSON to GeoJSON
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
-      // Display countries using POLYGONS (more accurate than hexagons)
+      // Display countries using POLYGONS (accurate rendering)
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
@@ -1011,20 +1069,51 @@ class D3GlobeElement extends HTMLElement {
         .polygonAltitude(0.01)
         .polygonSideColorDarker(0.3);
       
-      loading.style.display = 'none';
+      // Hide loading indicator
+      if (loading) {
+        loading.style.display = 'none';
+      }
       
-      console.log('✅ Globe initialized with ALL countries (including India, Asia, etc.)');
+      console.log('✅ Globe ready with ALL countries (including India, Asia, etc.)');
       
-      // Load initial data if available
+      // Load initial marker data if available
       const mapData = this.getAttribute('map-data');
       if (mapData) {
-        console.log('📍 Initial map data found, rendering markers');
+        console.log('📍 Loading markers...');
         this.updateMarkers();
       }
       
     } catch (error) {
       console.error('❌ Error loading countries:', error);
-      loading.textContent = 'Error loading map data';
+      
+      // Retry logic
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Retry ${retryCount + 1}/${maxRetries}...`);
+        if (loading) {
+          loading.textContent = `Loading map data... (retry ${retryCount + 1}/${maxRetries})`;
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        
+        return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
+      }
+      
+      // Max retries exceeded
+      console.error('❌ Failed to load countries after', maxRetries, 'attempts');
+      
+      if (loading) {
+        loading.textContent = 'Unable to load map data. Please refresh the page.';
+        loading.style.color = '#ff6b6b';
+        loading.style.fontSize = '14px';
+      }
+      
+      // Still try to load markers if available (globe works without countries)
+      const mapData = this.getAttribute('map-data');
+      if (mapData) {
+        console.log('📍 Loading markers without country data...');
+        this.updateMarkers();
+      }
     }
   }
 
