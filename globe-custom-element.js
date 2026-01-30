@@ -7,6 +7,7 @@ class D3GlobeElement extends HTMLElement {
     this.resizeTimeout = null;
     this.initialRenderDone = false;
     this.autoRotate = true;
+    this.countriesData = null;
     
     // Parse initial style props if available
     const initialStyleProps = this.getAttribute('style-props');
@@ -17,8 +18,11 @@ class D3GlobeElement extends HTMLElement {
 
   getDefaultStyleProps() {
     return {
-      bgColor1: '#0a0e27',
-      bgColor2: '#1a1f3a',
+      bgColor1: '#667eea',
+      bgColor2: '#764ba2',
+      countryFill: '#ffffff',
+      countryStroke: '#667eea',
+      countryHover: '#f0f0f0',
       markerRecent: '#48bb78',
       markerOld: '#4299e1',
       markerStyle: 'pin',
@@ -40,10 +44,7 @@ class D3GlobeElement extends HTMLElement {
       statsLabelColor: '#718096',
       statsBgColor: '#ffffff',
       legendTextColor: '#4a5568',
-      language: 'en',
-      globeColor: '#1a1f3a',
-      atmosphereColor: '#667eea',
-      atmosphereAltitude: 0.15
+      language: 'en'
     };
   }
 
@@ -343,12 +344,22 @@ class D3GlobeElement extends HTMLElement {
           
           <div class="legend-group">
             <div class="legend-item">
-              <div class="legend-dot recent"></div>
+              <div class="legend-icon">
+                <svg width="16" height="20" viewBox="0 0 24 34">
+                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
+                        fill="${this.styleProps.markerRecent}"/>
+                </svg>
+              </div>
               <span>${t.recent}</span>
             </div>
             
             <div class="legend-item">
-              <div class="legend-dot old"></div>
+              <div class="legend-icon">
+                <svg width="16" height="20" viewBox="0 0 24 34">
+                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
+                        fill="${this.styleProps.markerOld}"/>
+                </svg>
+              </div>
               <span>${t.earlier}</span>
             </div>
           </div>
@@ -565,21 +576,12 @@ class D3GlobeElement extends HTMLElement {
         color: ${legendTextColor};
       }
       
-      .legend-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        box-shadow: 0 0 8px currentColor;
-      }
-      
-      .legend-dot.recent {
-        background: ${markerRecent};
-        color: ${markerRecent};
-      }
-      
-      .legend-dot.old {
-        background: ${markerOld};
-        color: ${markerOld};
+      .legend-icon {
+        width: 16px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .map-title {
@@ -589,56 +591,6 @@ class D3GlobeElement extends HTMLElement {
         font-size: 14px;
         font-weight: 700;
         color: ${titleColor};
-      }
-      
-      /* Tooltip styles - globe.gl uses these */
-      .globe-tooltip {
-        background: ${tooltipBg} !important;
-        color: white !important;
-        padding: 14px 18px !important;
-        border-radius: 10px !important;
-        font-size: 13px !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(10px) !important;
-        min-width: 200px !important;
-        line-height: 1.4 !important;
-        pointer-events: none !important;
-      }
-      
-      .globe-tooltip strong {
-        display: block;
-        font-size: 15px;
-        margin-bottom: 6px;
-        color: ${tooltipTitleColor};
-      }
-      
-      .tooltip-row {
-        display: flex;
-        justify-content: space-between;
-        margin: 4px 0;
-        font-size: 12px;
-      }
-      
-      .tooltip-label {
-        color: ${tooltipLabelColor};
-        margin-right: 12px;
-      }
-      
-      .tooltip-value {
-        color: ${tooltipValueColor};
-        font-weight: 600;
-      }
-      
-      .tooltip-highlight {
-        background: rgba(72, 187, 120, 0.2);
-        padding: 4px 10px;
-        border-radius: 6px;
-        margin-top: 6px;
-        text-align: center;
-        color: ${tooltipHighlightColor};
-        font-weight: 600;
       }
       
       /* Responsive Design */
@@ -810,17 +762,28 @@ class D3GlobeElement extends HTMLElement {
     
     if (!this.globe) return;
     
-    const { globeColor, atmosphereColor, atmosphereAltitude } = this.styleProps;
+    const { countryFill, countryStroke } = this.styleProps;
     
+    // Update globe base (ocean) color
     this.globe
       .globeMaterial(new window.THREE.MeshPhongMaterial({
-        color: globeColor || '#1a1f3a',
-        emissive: globeColor || '#1a1f3a',
-        emissiveIntensity: 0.1,
-        shininess: 0.9
+        color: this.styleProps.bgColor1 || '#667eea',
+        emissive: this.styleProps.bgColor1 || '#667eea',
+        emissiveIntensity: 0.05,
+        shininess: 0.7
       }))
-      .atmosphereColor(atmosphereColor || '#667eea')
-      .atmosphereAltitude(atmosphereAltitude || 0.15);
+      .atmosphereColor(countryStroke || '#667eea')
+      .atmosphereAltitude(0.15);
+    
+    // Update country colors
+    if (this.countriesData) {
+      this.globe
+        .hexPolygonsData(this.countriesData.features)
+        .hexPolygonResolution(3)
+        .hexPolygonMargin(0.3)
+        .hexPolygonColor(() => countryFill || '#ffffff')
+        .hexPolygonAltitude(0.01);
+    }
     
     // Update markers with new colors
     const mapData = this.getAttribute('map-data');
@@ -920,6 +883,17 @@ class D3GlobeElement extends HTMLElement {
       }
       console.log('✅ Three.js loaded');
       
+      // Load TopoJSON (needed for country data)
+      if (!window.topojson) {
+        await this.loadScript('https://unpkg.com/topojson@3');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      if (!window.topojson) {
+        throw new Error('TopoJSON failed to load');
+      }
+      console.log('✅ TopoJSON loaded');
+      
       // Load Globe.GL
       if (!window.Globe) {
         await this.loadScript('//unpkg.com/globe.gl');
@@ -965,20 +939,20 @@ class D3GlobeElement extends HTMLElement {
     const container = this.shadowRoot.getElementById('globeViz');
     const loading = this.shadowRoot.getElementById('loading');
     
-    const { bgColor1, globeColor, atmosphereColor, atmosphereAltitude } = this.styleProps;
+    const { bgColor1, countryFill, countryStroke } = this.styleProps;
     
     // Initialize Globe
     this.globe = window.Globe({ animateIn: true })
       (container)
-      .backgroundColor(bgColor1 || '#0a0e27')
+      .backgroundColor(bgColor1 || '#667eea')
       .globeMaterial(new window.THREE.MeshPhongMaterial({
-        color: globeColor || '#1a1f3a',
-        emissive: globeColor || '#1a1f3a',
-        emissiveIntensity: 0.1,
-        shininess: 0.9
+        color: bgColor1 || '#667eea',
+        emissive: bgColor1 || '#667eea',
+        emissiveIntensity: 0.05,
+        shininess: 0.7
       }))
-      .atmosphereColor(atmosphereColor || '#667eea')
-      .atmosphereAltitude(atmosphereAltitude || 0.15)
+      .atmosphereColor(countryStroke || '#667eea')
+      .atmosphereAltitude(0.15)
       .width(container.clientWidth)
       .height(container.clientHeight)
       .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
@@ -990,15 +964,38 @@ class D3GlobeElement extends HTMLElement {
     this.globe.controls().minDistance = 101;
     this.globe.controls().maxDistance = 500;
     
-    loading.style.display = 'none';
-    
-    console.log('✅ Globe initialized');
-    
-    // Load initial data if available
-    const mapData = this.getAttribute('map-data');
-    if (mapData) {
-      console.log('📍 Initial map data found, rendering markers');
-      this.updateMarkers();
+    // Load countries data
+    try {
+      console.log('📥 Loading countries data...');
+      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      const worldData = await response.json();
+      
+      // Convert TopoJSON to GeoJSON
+      this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
+      console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
+      
+      // Display countries
+      this.globe
+        .hexPolygonsData(this.countriesData.features)
+        .hexPolygonResolution(3)
+        .hexPolygonMargin(0.3)
+        .hexPolygonColor(() => countryFill || '#ffffff')
+        .hexPolygonAltitude(0.01);
+      
+      loading.style.display = 'none';
+      
+      console.log('✅ Globe initialized with countries');
+      
+      // Load initial data if available
+      const mapData = this.getAttribute('map-data');
+      if (mapData) {
+        console.log('📍 Initial map data found, rendering markers');
+        this.updateMarkers();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading countries:', error);
+      loading.textContent = 'Error loading map data';
     }
   }
 
@@ -1026,7 +1023,7 @@ class D3GlobeElement extends HTMLElement {
         return;
       }
       
-      const { markerRecent, markerOld, markerSize, showTooltip } = this.styleProps;
+      const { markerRecent, markerOld, markerStyle, markerSize, showPulse, showVisitCount, badgeBg, badgeText, showTooltip } = this.styleProps;
       
       // Calculate stats
       let recentCount = 0;
@@ -1037,68 +1034,144 @@ class D3GlobeElement extends HTMLElement {
         totalVisits += location.totalVisits || 0;
       });
       
-      // Update points data for globe
-      const pointsData = locations.map(location => ({
-        lat: location.lat,
-        lng: location.lng,
-        size: (markerSize || 24) / 10, // Scale size appropriately
-        color: location.isRecent ? markerRecent : markerOld,
-        title: location.title || 'Visitor Location',
-        totalVisits: location.totalVisits || 1,
-        visitorCount: location.visitorCount || 1,
-        lastVisit: location.lastVisit || 'Unknown',
-        isRecent: location.isRecent
-      }));
-      
+      // Create HTML labels for markers with different styles
       this.globe
-        .pointsData(pointsData)
-        .pointAltitude(0.01)
-        .pointRadius('size')
-        .pointColor('color')
-        .pointResolution(12);
-      
-      // Add tooltip if enabled
-      if (showTooltip) {
-        this.globe.pointLabel(point => {
-          return `
-            <div class="globe-tooltip">
-              <strong>📍 ${point.title}</strong>
-              <div class="tooltip-row">
-                <span class="tooltip-label">${t.totalVisitsLabel}</span>
-                <span class="tooltip-value">${point.totalVisits}</span>
+        .htmlElementsData(locations)
+        .htmlLat(d => d.lat)
+        .htmlLng(d => d.lng)
+        .htmlAltitude(0.01)
+        .htmlElement(d => {
+          const el = document.createElement('div');
+          el.style.cssText = 'cursor: pointer; user-select: none; pointer-events: auto;';
+          
+          const color = d.isRecent ? markerRecent : markerOld;
+          const size = markerSize || 24;
+          
+          // Create marker based on style
+          if (markerStyle === 'pin') {
+            el.innerHTML = `
+              <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
+                <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transform-origin: center bottom;">
+                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
+                        fill="${color}"/>
+                </svg>
+                ${showVisitCount && d.totalVisits > 1 ? `
+                  <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
+                  </div>
+                ` : ''}
               </div>
-              <div class="tooltip-row">
-                <span class="tooltip-label">${t.uniqueVisitors}</span>
-                <span class="tooltip-value">${point.visitorCount}</span>
+            `;
+          } else if (markerStyle === 'circle') {
+            el.innerHTML = `
+              <div style="position: relative; width: ${size}px; height: ${size}px;">
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; 
+                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
+                ${showVisitCount && d.totalVisits > 1 ? `
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
+                  </div>
+                ` : ''}
               </div>
-              <div class="tooltip-row">
-                <span class="tooltip-label">${t.lastVisit}</span>
-                <span class="tooltip-value">${point.lastVisit}</span>
+            `;
+          } else if (markerStyle === 'square') {
+            el.innerHTML = `
+              <div style="position: relative; width: ${size}px; height: ${size}px;">
+                <div style="width: ${size}px; height: ${size}px; background: ${color}; 
+                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
+                ${showVisitCount && d.totalVisits > 1 ? `
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10;">
+                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
+                  </div>
+                ` : ''}
               </div>
-              ${point.isRecent ? `<div class="tooltip-highlight">${t.activeNow}</div>` : ''}
-            </div>
-          `;
+            `;
+          } else if (markerStyle === 'star') {
+            el.innerHTML = `
+              <div style="position: relative; width: ${size}px; height: ${size}px;">
+                <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                  <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
+                        fill="${color}" stroke="white" stroke-width="1.5"/>
+                </svg>
+                ${showVisitCount && d.totalVisits > 1 ? `
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }
+          
+          // Add tooltip on hover if enabled
+          if (showTooltip) {
+            el.addEventListener('mouseenter', () => {
+              el.style.zIndex = '1000';
+              el.innerHTML += `
+                <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); 
+                            background: ${this.styleProps.tooltipBg}; color: white; padding: 12px 16px; 
+                            border-radius: 8px; white-space: nowrap; pointer-events: none; z-index: 10000;
+                            box-shadow: 0 8px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 12px; margin-bottom: 8px;">
+                  <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
+                  <div style="margin: 3px 0;">
+                    <span style="color: ${this.styleProps.tooltipLabelColor};">Total Visits:</span>
+                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
+                  </div>
+                  <div style="margin: 3px 0;">
+                    <span style="color: ${this.styleProps.tooltipLabelColor};">Unique Visitors:</span>
+                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
+                  </div>
+                  <div style="margin: 3px 0;">
+                    <span style="color: ${this.styleProps.tooltipLabelColor};">Last Visit:</span>
+                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
+                  </div>
+                  ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">🟢 Active in last 24h</div>` : ''}
+                </div>
+              `;
+            });
+            
+            el.addEventListener('mouseleave', () => {
+              el.style.zIndex = 'auto';
+              // Recreate the marker without tooltip
+              const newEl = el.cloneNode(false);
+              newEl.innerHTML = el.querySelector('div').outerHTML;
+              el.parentNode.replaceChild(newEl, el);
+            });
+          }
+          
+          return el;
         });
-      }
       
-      // Add rings/arcs for visual effect
-      const ringsData = locations
-        .filter(loc => loc.isRecent)
-        .map(location => ({
-          lat: location.lat,
-          lng: location.lng,
-          maxR: 2,
-          propagationSpeed: 2,
-          repeatPeriod: 1500
-        }));
-      
-      if (this.styleProps.showPulse) {
+      // Add VISIBLE pulse rings for recent visitors
+      if (showPulse) {
+        const ringsData = locations
+          .filter(loc => loc.isRecent)
+          .map(location => ({
+            lat: location.lat,
+            lng: location.lng,
+            maxR: 5, // Larger radius
+            propagationSpeed: 3, // Faster
+            repeatPeriod: 1200 // More frequent
+          }));
+        
         this.globe
           .ringsData(ringsData)
           .ringColor(() => markerRecent)
           .ringMaxRadius('maxR')
           .ringPropagationSpeed('propagationSpeed')
-          .ringRepeatPeriod('repeatPeriod');
+          .ringRepeatPeriod('repeatPeriod')
+          .ringAltitude(0.015); // Slightly raised for visibility
+      } else {
+        this.globe.ringsData([]);
       }
       
       console.log('\n📊 STATISTICS');
