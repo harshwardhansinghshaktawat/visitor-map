@@ -10,10 +10,8 @@ class GlobeVisitorMapElement extends HTMLElement {
     this.countries = null;
     this.handleResize = this.handleResize.bind(this);
     this.resizeTimeout = null;
-    this.rotationAngle = 0;
-    this.autoRotate = true;
-    this.isDragging = false;
     this.markerData = [];
+    this.rotationTimer = null;
     
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
@@ -67,7 +65,7 @@ class GlobeVisitorMapElement extends HTMLElement {
   disconnectedCallback() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
-    this.autoRotate = false;
+    if (this.rotationTimer) this.rotationTimer.stop();
   }
 
   static get observedAttributes() {
@@ -530,7 +528,6 @@ class GlobeVisitorMapElement extends HTMLElement {
     if (zoomReset) {
       zoomReset.addEventListener('click', () => {
         if (!this.projection) return;
-        this.rotationAngle = 0;
         const container = this.shadowRoot.getElementById('globeWrapper');
         const size = Math.min(container.clientWidth, container.clientHeight);
         this.projection.scale(size / 2.2).rotate([0, 0]);
@@ -543,13 +540,11 @@ class GlobeVisitorMapElement extends HTMLElement {
     try {
       console.log('📦 Loading D3.js and TopoJSON...');
       
-      // Load D3.js
       if (!window.d3) {
         await this.loadScript('https://d3js.org/d3.v7.min.js');
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      // Load TopoJSON
       if (!window.topojson) {
         await this.loadScript('https://unpkg.com/topojson@3.0.2/dist/topojson.min.js');
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -616,36 +611,39 @@ class GlobeVisitorMapElement extends HTMLElement {
     const size = Math.min(width, height);
     
     const { countryFill, countryStroke } = this.styleProps;
+    const sensitivity = 75;
+    
+    // Create projection
+    this.projection = d3.geoOrthographic()
+      .scale(size / 2.2)
+      .center([0, 0])
+      .rotate([0, -30])
+      .translate([width / 2, height / 2]);
+    
+    const initialScale = this.projection.scale();
+    
+    // Create path generator
+    this.path = d3.geoPath().projection(this.projection);
     
     // Create SVG
     this.svg = d3.select(this.shadowRoot.getElementById('globeSvg'))
       .attr('width', width)
       .attr('height', height);
     
-    // Create projection (orthographic for 3D globe effect)
-    this.projection = d3.geoOrthographic()
-      .scale(size / 2.2)
-      .translate([width / 2, height / 2])
-      .clipAngle(90)
-      .rotate([0, 0]);
-    
-    // Create path generator
-    this.path = d3.geoPath().projection(this.projection);
-    
-    // Create globe background sphere (ocean)
-    this.svg.append('circle')
+    // Create globe background sphere
+    this.globe = this.svg.append('circle')
       .attr('class', 'globe-sphere')
-      .attr('cx', width / 2)
-      .attr('cy', height / 2)
-      .attr('r', this.projection.scale())
       .attr('fill', '#a8d8ea')
       .attr('stroke', countryStroke)
-      .attr('stroke-width', 1.5);
+      .attr('stroke-width', 1.5)
+      .attr('cx', width / 2)
+      .attr('cy', height / 2)
+      .attr('r', initialScale);
     
-    // Create groups for countries and markers
-    this.globe = this.svg.append('g').attr('class', 'globe-group');
-    this.countries = this.globe.append('g').attr('class', 'countries');
-    this.markers = this.globe.append('g').attr('class', 'markers');
+    // Create groups
+    const map = this.svg.append('g');
+    this.countries = map.append('g').attr('class', 'countries');
+    this.markers = map.append('g').attr('class', 'markers');
     
     // Load world data
     try {
@@ -662,12 +660,13 @@ class GlobeVisitorMapElement extends HTMLElement {
       // Draw countries
       this.countries.selectAll('path')
         .data(countries.features)
-        .join('path')
+        .enter().append('path')
         .attr('class', 'country')
         .attr('d', this.path)
         .attr('fill', countryFill)
-        .attr('stroke', countryStroke)
-        .attr('stroke-width', 0.5)
+        .style('stroke', countryStroke)
+        .style('stroke-width', 0.5)
+        .style('opacity', 0.8)
         .style('cursor', 'pointer')
         .on('mouseenter', function() {
           d3.select(this).attr('fill', this.styleProps.countryHover);
@@ -684,36 +683,43 @@ class GlobeVisitorMapElement extends HTMLElement {
     }
     
     // Setup drag behavior
-    const drag = d3.drag()
-      .on('start', () => {
-        this.isDragging = true;
-        this.autoRotate = false;
-        this.svg.style('cursor', 'grabbing');
-      })
-      .on('drag', (event) => {
-        const rotate = this.projection.rotate();
-        const k = 75 / this.projection.scale();
-        this.projection.rotate([
-          rotate[0] + event.dx * k,
-          rotate[1] - event.dy * k
-        ]);
-        this.rotationAngle = rotate[0] + event.dx * k;
-        this.updateGlobe();
-      })
-      .on('end', () => {
-        this.isDragging = false;
-        this.svg.style('cursor', 'grab');
-        setTimeout(() => { 
-          if (!this.isDragging) {
-            this.autoRotate = true;
-          }
-        }, 2000);
-      });
+    this.svg.call(d3.drag().on('drag', (event) => {
+      const rotate = this.projection.rotate();
+      const k = sensitivity / this.projection.scale();
+      this.projection.rotate([
+        rotate[0] + event.dx * k,
+        rotate[1] - event.dy * k
+      ]);
+      this.path = d3.geoPath().projection(this.projection);
+      this.svg.selectAll('path').attr('d', this.path);
+      this.updateMarkerPositions();
+    }));
     
-    this.svg.call(drag);
+    // Setup zoom behavior
+    this.svg.call(d3.zoom().on('zoom', (event) => {
+      if (event.transform.k > 0.3) {
+        this.projection.scale(initialScale * event.transform.k);
+        this.path = d3.geoPath().projection(this.projection);
+        this.svg.selectAll('path').attr('d', this.path);
+        this.globe.attr('r', this.projection.scale());
+        this.updateMarkerPositions();
+      } else {
+        event.transform.k = 0.3;
+      }
+    }));
     
-    // Start auto-rotation
-    this.startAutoRotation();
+    // Auto-rotation using d3.timer (continues even after dragging)
+    this.rotationTimer = d3.timer((elapsed) => {
+      const rotate = this.projection.rotate();
+      const k = sensitivity / this.projection.scale();
+      this.projection.rotate([
+        rotate[0] - 1 * k,
+        rotate[1]
+      ]);
+      this.path = d3.geoPath().projection(this.projection);
+      this.svg.selectAll('path').attr('d', this.path);
+      this.updateMarkerPositions();
+    }, 200);
     
     loading.style.display = 'none';
     
@@ -727,30 +733,10 @@ class GlobeVisitorMapElement extends HTMLElement {
     console.log('✅ Globe initialized');
   }
 
-  startAutoRotation() {
-    const animate = () => {
-      if (this.autoRotate && !this.isDragging) {
-        this.rotationAngle += 0.2;
-        const currentRotate = this.projection.rotate();
-        this.projection.rotate([this.rotationAngle, currentRotate[1]]);
-        this.updateGlobe();
-      }
-      
-      if (this.autoRotate || this.isDragging) {
-        requestAnimationFrame(animate);
-      }
-    };
-    
-    requestAnimationFrame(animate);
-  }
-
   updateGlobe() {
-    if (!this.countries || !this.path) return;
-    
-    // Update countries
-    this.countries.selectAll('path').attr('d', this.path);
-    
-    // Update markers
+    if (!this.path) return;
+    this.svg.selectAll('path').attr('d', this.path);
+    this.globe.attr('r', this.projection.scale());
     this.updateMarkerPositions();
   }
 
@@ -763,12 +749,6 @@ class GlobeVisitorMapElement extends HTMLElement {
       const point = self.projection([d.lng, d.lat]);
       
       if (point) {
-        // Simple visibility check using clipAngle
-        const rotate = self.projection.rotate();
-        const lambda = d.lng + rotate[0];
-        const phi = d.lat + rotate[1];
-        
-        // Check if the point is on the visible hemisphere
         const visible = d3.geoDistance([d.lng, d.lat], self.projection.invert(self.projection.translate())) < Math.PI / 2;
         
         d3.select(this)
@@ -783,15 +763,12 @@ class GlobeVisitorMapElement extends HTMLElement {
     
     const { countryFill, countryStroke, countryHover } = this.styleProps;
     
-    // Update globe sphere (ocean)
-    this.svg.select('.globe-sphere')
-      .attr('stroke', countryStroke);
+    this.globe.attr('stroke', countryStroke);
     
-    // Update countries
     if (this.countries) {
       this.countries.selectAll('path')
         .attr('fill', countryFill)
-        .attr('stroke', countryStroke)
+        .style('stroke', countryStroke)
         .on('mouseenter', function() {
           d3.select(this).attr('fill', countryHover);
         })
@@ -801,6 +778,70 @@ class GlobeVisitorMapElement extends HTMLElement {
     }
     
     console.log('✅ Globe styles updated');
+  }
+
+  // Create marker shapes based on markerStyle
+  createMarkerShape(group, d, size, color) {
+    const { markerStyle } = this.styleProps;
+    
+    if (markerStyle === 'circle') {
+      group.append('circle')
+        .attr('class', 'marker-shape')
+        .attr('r', size / 2.5)
+        .attr('fill', color)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3);
+    } else if (markerStyle === 'square') {
+      const squareSize = size / 2;
+      group.append('rect')
+        .attr('class', 'marker-shape')
+        .attr('x', -squareSize / 2)
+        .attr('y', -squareSize / 2)
+        .attr('width', squareSize)
+        .attr('height', squareSize)
+        .attr('fill', color)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3);
+    } else if (markerStyle === 'star') {
+      const starPath = this.createStarPath(size / 2.5);
+      group.append('path')
+        .attr('class', 'marker-shape')
+        .attr('d', starPath)
+        .attr('fill', color)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2);
+    } else { // pin (default)
+      const pinPath = this.createPinPath(size / 2);
+      group.append('path')
+        .attr('class', 'marker-shape')
+        .attr('d', pinPath)
+        .attr('fill', color)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2);
+    }
+  }
+
+  createPinPath(size) {
+    return `M 0,0 
+            C -${size/2},-${size/3} -${size/2},-${size*2/3} 0,-${size}
+            C ${size/2},-${size*2/3} ${size/2},-${size/3} 0,0 z`;
+  }
+
+  createStarPath(size) {
+    const points = 5;
+    const outerRadius = size;
+    const innerRadius = size / 2.5;
+    let path = '';
+    
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (Math.PI * i) / points - Math.PI / 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      path += (i === 0 ? 'M' : 'L') + x + ',' + y;
+    }
+    path += 'Z';
+    return path;
   }
 
   renderMarkers() {
@@ -820,13 +861,13 @@ class GlobeVisitorMapElement extends HTMLElement {
       const t = this.getTranslations();
       console.log('\n========== RENDERING GLOBE MARKERS ==========');
       console.log('📍 Total cities:', locations.length);
+      console.log('🎨 Marker style:', this.styleProps.markerStyle);
       
       if (locations.length === 0) {
         console.log('⚠️ No locations to display');
         return;
       }
       
-      // Store marker data
       this.markerData = locations;
       
       const { 
@@ -851,7 +892,7 @@ class GlobeVisitorMapElement extends HTMLElement {
       // Create marker groups
       const markerGroups = this.markers.selectAll('.marker-group')
         .data(locations)
-        .join('g')
+        .enter().append('g')
         .attr('class', 'marker-group')
         .each(function(d) {
           const point = self.projection([d.lng, d.lat]);
@@ -875,16 +916,16 @@ class GlobeVisitorMapElement extends HTMLElement {
           .attr('opacity', 0);
       }
       
-      // Add main marker circles
-      markerGroups.append('circle')
-        .attr('class', 'marker-circle')
-        .attr('r', markerSize / 2.5)
-        .attr('fill', d => d.isRecent ? markerRecent : markerOld)
-        .attr('stroke', 'white')
-        .attr('stroke-width', 3)
-        .attr('opacity', 1)
-        .style('cursor', 'pointer')
-        .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))');
+      // Add markers with different styles
+      markerGroups.each(function(d) {
+        const group = d3.select(this);
+        const color = d.isRecent ? markerRecent : markerOld;
+        self.createMarkerShape(group, d, markerSize, color);
+        
+        group.selectAll('.marker-shape')
+          .style('cursor', 'pointer')
+          .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))');
+      });
       
       // Add visit count badges
       if (showVisitCount) {
@@ -895,14 +936,12 @@ class GlobeVisitorMapElement extends HTMLElement {
           .each(function(d) {
             const group = d3.select(this);
             
-            // Badge background
             group.append('circle')
               .attr('r', 12)
               .attr('fill', badgeBg)
               .attr('stroke', d.isRecent ? markerRecent : markerOld)
               .attr('stroke-width', 2);
             
-            // Badge text
             group.append('text')
               .attr('text-anchor', 'middle')
               .attr('dy', '0.35em')
@@ -955,7 +994,7 @@ class GlobeVisitorMapElement extends HTMLElement {
           });
       }
       
-      console.log('\n📊 STATISTICS');
+      console.log('📊 STATISTICS');
       console.log('Cities:', locations.length);
       console.log('Total Visits:', totalVisits);
       console.log('Recent (24h):', recentCount);
@@ -993,7 +1032,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         .scale(size / 2.2)
         .translate([width / 2, height / 2]);
       
-      this.svg.select('.globe-sphere')
+      this.globe
         .attr('cx', width / 2)
         .attr('cy', height / 2)
         .attr('r', this.projection.scale());
