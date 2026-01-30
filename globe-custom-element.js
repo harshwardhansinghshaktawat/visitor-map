@@ -802,14 +802,15 @@ class D3GlobeElement extends HTMLElement {
       .atmosphereColor(countryStroke || '#667eea')
       .atmosphereAltitude(0.15);
     
-    // Update country colors
+    // Update country colors using POLYGONS for accurate rendering
     if (this.countriesData) {
       this.globe
-        .hexPolygonsData(this.countriesData.features)
-        .hexPolygonResolution(3)
-        .hexPolygonMargin(0.3)
-        .hexPolygonColor(() => countryFill || '#ffffff')
-        .hexPolygonAltitude(0.01);
+        .polygonsData(this.countriesData.features)
+        .polygonCapColor(() => countryFill || '#ffffff')
+        .polygonSideColor(() => countryFill || '#ffffff')
+        .polygonStrokeColor(() => countryStroke || '#667eea')
+        .polygonAltitude(0.01)
+        .polygonSideColorDarker(0.3);
     }
     
     // Update markers with new colors
@@ -991,7 +992,7 @@ class D3GlobeElement extends HTMLElement {
     this.globe.controls().minDistance = 101;
     this.globe.controls().maxDistance = 500;
     
-    // Load countries data
+    // Load countries data - CORRECTED VERSION
     try {
       console.log('📥 Loading countries data...');
       const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
@@ -1001,17 +1002,18 @@ class D3GlobeElement extends HTMLElement {
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
-      // Display countries
+      // Display countries using POLYGONS (more accurate than hexagons)
       this.globe
-        .hexPolygonsData(this.countriesData.features)
-        .hexPolygonResolution(3)
-        .hexPolygonMargin(0.3)
-        .hexPolygonColor(() => countryFill || '#ffffff')
-        .hexPolygonAltitude(0.01);
+        .polygonsData(this.countriesData.features)
+        .polygonCapColor(() => countryFill || '#ffffff')
+        .polygonSideColor(() => countryFill || '#ffffff')
+        .polygonStrokeColor(() => countryStroke || '#667eea')
+        .polygonAltitude(0.01)
+        .polygonSideColorDarker(0.3);
       
       loading.style.display = 'none';
       
-      console.log('✅ Globe initialized with countries');
+      console.log('✅ Globe initialized with ALL countries (including India, Asia, etc.)');
       
       // Load initial data if available
       const mapData = this.getAttribute('map-data');
