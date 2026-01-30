@@ -10,6 +10,9 @@ class GlobeVisitorMapElement extends HTMLElement {
     this.countries = null;
     this.handleResize = this.handleResize.bind(this);
     this.resizeTimeout = null;
+    this.rotationFrame = null;
+    this.autoRotate = true;
+    this.isDragging = false;
     
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
@@ -63,6 +66,7 @@ class GlobeVisitorMapElement extends HTMLElement {
   disconnectedCallback() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+    if (this.rotationFrame) cancelAnimationFrame(this.rotationFrame);
   }
 
   static get observedAttributes() {
@@ -447,7 +451,7 @@ class GlobeVisitorMapElement extends HTMLElement {
           opacity: 0.8;
         }
         100% {
-          r: 15;
+          r: 20;
           opacity: 0;
         }
       }
@@ -538,7 +542,7 @@ class GlobeVisitorMapElement extends HTMLElement {
         if (!this.projection) return;
         const container = this.shadowRoot.getElementById('globeWrapper');
         const size = Math.min(container.clientWidth, container.clientHeight);
-        this.projection.scale(size / 2).rotate([0, 0]);
+        this.projection.scale(size / 2.2).rotate([0, 0]);
         this.redrawGlobe();
       });
     }
@@ -638,13 +642,13 @@ class GlobeVisitorMapElement extends HTMLElement {
     // Create path generator
     this.path = d3.geoPath().projection(this.projection);
     
-    // Create globe background sphere
+    // Create globe background sphere (ocean)
     this.svg.append('circle')
       .attr('class', 'globe-sphere')
       .attr('cx', width / 2)
       .attr('cy', height / 2)
       .attr('r', this.projection.scale())
-      .attr('fill', '#add8e6')
+      .attr('fill', '#a8d8ea')
       .attr('stroke', countryStroke)
       .attr('stroke-width', 1.5);
     
@@ -690,11 +694,10 @@ class GlobeVisitorMapElement extends HTMLElement {
     }
     
     // Setup drag behavior
-    let autoRotate = true;
-    
     const drag = d3.drag()
       .on('start', () => {
-        autoRotate = false;
+        this.isDragging = true;
+        this.autoRotate = false;
         this.svg.style('cursor', 'grabbing');
       })
       .on('drag', (event) => {
@@ -707,22 +710,19 @@ class GlobeVisitorMapElement extends HTMLElement {
         this.redrawGlobe();
       })
       .on('end', () => {
+        this.isDragging = false;
         this.svg.style('cursor', 'grab');
-        setTimeout(() => { autoRotate = true; }, 2000);
+        setTimeout(() => { 
+          if (!this.isDragging) {
+            this.autoRotate = true;
+          }
+        }, 2000);
       });
     
     this.svg.call(drag);
     
-    // Auto-rotation
-    const rotate = () => {
-      if (autoRotate) {
-        const currentRotate = this.projection.rotate();
-        this.projection.rotate([currentRotate[0] + 0.3, currentRotate[1]]);
-        this.redrawGlobe();
-      }
-    };
-    
-    setInterval(rotate, 50);
+    // Start smooth auto-rotation using requestAnimationFrame
+    this.startAutoRotation();
     
     loading.style.display = 'none';
     
@@ -736,17 +736,43 @@ class GlobeVisitorMapElement extends HTMLElement {
     console.log('✅ Globe initialized');
   }
 
+  startAutoRotation() {
+    const rotate = () => {
+      if (this.autoRotate && !this.isDragging) {
+        const currentRotate = this.projection.rotate();
+        this.projection.rotate([currentRotate[0] + 0.2, currentRotate[1]]);
+        this.redrawGlobe();
+      }
+      this.rotationFrame = requestAnimationFrame(rotate);
+    };
+    
+    rotate();
+  }
+
   redrawGlobe() {
-    if (!this.countries || !this.markers || !this.path) return;
+    if (!this.countries || !this.path) return;
     
     // Update countries
     this.countries.selectAll('path').attr('d', this.path);
     
-    // Update markers
+    // Update markers if they exist
+    if (this.markers) {
+      this.updateMarkerPositions();
+    }
+  }
+
+  updateMarkerPositions() {
+    if (!this.markers) return;
+    
     this.markers.selectAll('.marker-group').each(function(d) {
-      const projected = this.projection([d.lng, d.lat]);
+      const coords = [d.lng, d.lat];
+      const projected = this.projection(coords);
+      
       if (projected) {
-        const visible = this.path({type: 'Point', coordinates: [d.lng, d.lat]}) !== null;
+        // Check if point is on the visible side of the globe
+        const distance = d3.geoDistance(coords, this.projection.invert([this.projection.translate()[0], this.projection.translate()[1]]));
+        const visible = distance < Math.PI / 2;
+        
         d3.select(this)
           .style('display', visible ? 'block' : 'none')
           .attr('transform', `translate(${projected[0]},${projected[1]})`);
@@ -823,16 +849,22 @@ class GlobeVisitorMapElement extends HTMLElement {
       const markerGroups = this.markers.selectAll('.marker-group')
         .data(locations)
         .join('g')
-        .attr('class', 'marker-group')
-        .each(function(d) {
-          const projected = this.projection([d.lng, d.lat]);
-          if (projected) {
-            const visible = this.path({type: 'Point', coordinates: [d.lng, d.lat]}) !== null;
-            d3.select(this)
-              .style('display', visible ? 'block' : 'none')
-              .attr('transform', `translate(${projected[0]},${projected[1]})`);
-          }
-        }.bind(this));
+        .attr('class', 'marker-group');
+      
+      // Position markers initially
+      markerGroups.each(function(d) {
+        const coords = [d.lng, d.lat];
+        const projected = this.projection(coords);
+        
+        if (projected) {
+          const distance = d3.geoDistance(coords, this.projection.invert([this.projection.translate()[0], this.projection.translate()[1]]));
+          const visible = distance < Math.PI / 2;
+          
+          d3.select(this)
+            .style('display', visible ? 'block' : 'none')
+            .attr('transform', `translate(${projected[0]},${projected[1]})`);
+        }
+      }.bind(this));
       
       // Add pulse circles for recent visitors
       if (showPulse) {
@@ -844,28 +876,29 @@ class GlobeVisitorMapElement extends HTMLElement {
           .attr('opacity', 0);
       }
       
-      // Add main marker circles
+      // Add main marker circles - LARGER AND MORE VISIBLE
       markerGroups.append('circle')
         .attr('class', 'marker-circle')
-        .attr('r', markerSize / 3.5)
+        .attr('r', markerSize / 2.5)
         .attr('fill', d => d.isRecent ? markerRecent : markerOld)
         .attr('stroke', 'white')
-        .attr('stroke-width', 2.5)
-        .attr('opacity', 0.95)
-        .style('cursor', 'pointer');
+        .attr('stroke-width', 3)
+        .attr('opacity', 1)
+        .style('cursor', 'pointer')
+        .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))');
       
       // Add visit count badges
       if (showVisitCount) {
         markerGroups.filter(d => d.totalVisits > 1)
           .append('g')
           .attr('class', 'badge-group')
-          .attr('transform', `translate(${markerSize / 3}, ${-markerSize / 3})`)
+          .attr('transform', `translate(${markerSize / 2.5}, ${-markerSize / 2.5})`)
           .each(function(d) {
             const group = d3.select(this);
             
             // Badge background
             group.append('circle')
-              .attr('r', 11)
+              .attr('r', 12)
               .attr('fill', badgeBg)
               .attr('stroke', d.isRecent ? markerRecent : markerOld)
               .attr('stroke-width', 2);
@@ -874,7 +907,7 @@ class GlobeVisitorMapElement extends HTMLElement {
             group.append('text')
               .attr('text-anchor', 'middle')
               .attr('dy', '0.35em')
-              .attr('font-size', '10px')
+              .attr('font-size', '11px')
               .attr('font-weight', 'bold')
               .attr('fill', badgeText)
               .text(d.totalVisits > 99 ? '99+' : d.totalVisits);
