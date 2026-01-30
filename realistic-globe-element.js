@@ -290,6 +290,8 @@ class RealisticGlobeElement extends HTMLElement {
       <style>${styles}</style>
 
       <div class="globe-container">
+        <div id="globalTooltip" class="global-tooltip"></div>
+        
         <div class="globe-wrapper" id="globeWrapper">
           <div class="loading" id="loading">${t.loading}</div>
           <div id="globeViz"></div>
@@ -596,6 +598,31 @@ class RealisticGlobeElement extends HTMLElement {
         color: ${titleColor};
       }
       
+      .global-tooltip {
+        position: fixed;
+        background: ${tooltipBg};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 100000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.1);
+        white-space: nowrap;
+        transform: translate(-50%, -100%);
+        margin-top: -10px;
+      }
+      
+      .global-tooltip.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+      
       /* Responsive Design */
       @media (max-width: 1024px) {
         .bottom-stats {
@@ -798,6 +825,7 @@ class RealisticGlobeElement extends HTMLElement {
     // Create star geometry
     const starGeometry = new window.THREE.BufferGeometry();
     const starPositions = [];
+    const starSizes = [];
     
     for (let i = 0; i < starCount; i++) {
       const radius = 300 + Math.random() * 200;
@@ -809,24 +837,51 @@ class RealisticGlobeElement extends HTMLElement {
       const z = radius * Math.cos(phi);
       
       starPositions.push(x, y, z);
+      starSizes.push(Math.random() * 1.5 + 0.5); // Random sizes 0.5-2.0
     }
     
     starGeometry.setAttribute('position', new window.THREE.Float32BufferAttribute(starPositions, 3));
+    starGeometry.setAttribute('size', new window.THREE.Float32BufferAttribute(starSizes, 1));
     
-    // Create star material
+    // Create star material with better rendering
     const starMaterial = new window.THREE.PointsMaterial({
       color: 0xFFFFFF,
-      size: 1.5,
+      size: 1.2,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.9,
+      map: this.createStarTexture(),
+      blending: window.THREE.AdditiveBlending,
+      depthWrite: false
     });
     
     // Create and add stars to scene
     this.stars = new window.THREE.Points(starGeometry, starMaterial);
     scene.add(this.stars);
     
-    console.log('✨ Starfield created');
+    console.log('✨ Starfield created with', starCount, 'stars');
+  }
+
+  createStarTexture() {
+    // Create a circular star texture to avoid square artifacts
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 32, 32);
+    
+    const texture = new window.THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    
+    return texture;
   }
 
   removeStarfield() {
@@ -1053,71 +1108,76 @@ class RealisticGlobeElement extends HTMLElement {
         .htmlElementsData(locations)
         .htmlLat(d => d.lat)
         .htmlLng(d => d.lng)
-        .htmlAltitude(0.01)
+        .htmlAltitude(0.005) // Reduced altitude to keep markers closer to Earth
         .htmlElement(d => {
           const el = document.createElement('div');
-          el.style.cssText = 'cursor: pointer; user-select: none; pointer-events: auto;';
+          el.style.cssText = 'cursor: pointer; user-select: none; pointer-events: auto; position: relative;';
           
           const color = d.isRecent ? markerRecent : markerOld;
           const size = markerSize || 24;
           
+          // Create marker container
+          const markerContainer = document.createElement('div');
+          markerContainer.className = 'marker-container';
+          markerContainer.style.cssText = 'position: relative; display: inline-block;';
+          
           // Create marker based on style
           if (markerStyle === 'pin') {
-            el.innerHTML = `
-              <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
+            markerContainer.innerHTML = `
+              <div class="marker-icon" style="position: relative; width: ${size}px; height: ${size + 10}px;">
                 <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transform-origin: center bottom;">
                   <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
                         fill="${color}"/>
                 </svg>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
+                  <div class="visit-badge" style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
                               justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
               </div>
             `;
           } else if (markerStyle === 'circle') {
-            el.innerHTML = `
-              <div style="position: relative; width: ${size}px; height: ${size}px;">
+            markerContainer.innerHTML = `
+              <div class="marker-icon" style="position: relative; width: ${size}px; height: ${size}px;">
                 <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; 
                             border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                  <div class="visit-badge" style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
               </div>
             `;
           } else if (markerStyle === 'square') {
-            el.innerHTML = `
-              <div style="position: relative; width: ${size}px; height: ${size}px;">
+            markerContainer.innerHTML = `
+              <div class="marker-icon" style="position: relative; width: ${size}px; height: ${size}px;">
                 <div style="width: ${size}px; height: ${size}px; background: ${color}; 
                             border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                  <div class="visit-badge" style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10;">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
               </div>
             `;
           } else if (markerStyle === 'star') {
-            el.innerHTML = `
-              <div style="position: relative; width: ${size}px; height: ${size}px;">
+            markerContainer.innerHTML = `
+              <div class="marker-icon" style="position: relative; width: ${size}px; height: ${size}px;">
                 <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
                   <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
                         fill="${color}" stroke="white" stroke-width="1.5"/>
                 </svg>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                  <div class="visit-badge" style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
                               border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
                   </div>
                 ` : ''}
@@ -1125,41 +1185,72 @@ class RealisticGlobeElement extends HTMLElement {
             `;
           }
           
-          // Add tooltip on hover if enabled
+          el.appendChild(markerContainer);
+          
+          // Add tooltip on hover if enabled - FIXED VERSION
           if (showTooltip) {
-            el.addEventListener('mouseenter', () => {
-              el.style.zIndex = '1000';
-              el.innerHTML += `
-                <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); 
-                            background: ${this.styleProps.tooltipBg}; color: white; padding: 12px 16px; 
-                            border-radius: 8px; white-space: nowrap; pointer-events: none; z-index: 10000;
-                            box-shadow: 0 8px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 12px; margin-bottom: 8px;">
-                  <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">${t.totalVisitsLabel}</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
-                  </div>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">${t.uniqueVisitors}</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
-                  </div>
-                  <div style="margin: 3px 0;">
-                    <span style="color: ${this.styleProps.tooltipLabelColor};">${t.lastVisit}</span>
-                    <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
-                  </div>
-                  ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">${t.activeNow}</div>` : ''}
-                </div>
-              `;
-            });
+            let tooltipDiv = null;
             
-            el.addEventListener('mouseleave', () => {
+            const showTooltipFn = () => {
+              // Remove any existing tooltip first
+              if (tooltipDiv) {
+                tooltipDiv.remove();
+                tooltipDiv = null;
+              }
+              
+              // Create new tooltip
+              tooltipDiv = document.createElement('div');
+              tooltipDiv.className = 'marker-tooltip';
+              tooltipDiv.style.cssText = `
+                position: absolute; 
+                bottom: 100%; 
+                left: 50%; 
+                transform: translateX(-50%); 
+                background: ${this.styleProps.tooltipBg}; 
+                color: white; 
+                padding: 12px 16px; 
+                border-radius: 8px; 
+                white-space: nowrap; 
+                pointer-events: none; 
+                z-index: 10000;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+                border: 1px solid rgba(255,255,255,0.1);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+                font-size: 12px; 
+                margin-bottom: 8px;
+              `;
+              
+              tooltipDiv.innerHTML = `
+                <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.totalVisitsLabel}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
+                </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.uniqueVisitors}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
+                </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.lastVisit}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
+                </div>
+                ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">${t.activeNow}</div>` : ''}
+              `;
+              
+              el.appendChild(tooltipDiv);
+              el.style.zIndex = '1000';
+            };
+            
+            const hideTooltipFn = () => {
+              if (tooltipDiv) {
+                tooltipDiv.remove();
+                tooltipDiv = null;
+              }
               el.style.zIndex = 'auto';
-              // Recreate the marker without tooltip
-              const newEl = el.cloneNode(false);
-              newEl.innerHTML = el.querySelector('div').outerHTML;
-              el.parentNode.replaceChild(newEl, el);
-            });
+            };
+            
+            el.addEventListener('mouseenter', showTooltipFn);
+            el.addEventListener('mouseleave', hideTooltipFn);
           }
           
           return el;
