@@ -821,8 +821,7 @@ class D3GlobeElement extends HTMLElement {
         .polygonCapColor(() => countryFill || '#ffffff')
         .polygonSideColor(() => countryFill || '#ffffff')
         .polygonStrokeColor(() => countryStroke || '#667eea')
-        .polygonAltitude(0.01)
-        .polygonSideColorDarker(0.3);
+        .polygonAltitude(0.01);
     }
     
     // Update markers with new colors
@@ -1100,14 +1099,13 @@ class D3GlobeElement extends HTMLElement {
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
-      // Display countries using POLYGONS (accurate rendering)
+      // Display countries using POLYGONS - REMOVED polygonSideColorDarker
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
         .polygonSideColor(() => countryFill || '#ffffff')
         .polygonStrokeColor(() => countryStroke || '#667eea')
-        .polygonAltitude(0.01)
-        .polygonSideColorDarker(0.3);
+        .polygonAltitude(0.01);
       
       console.log('✅ Countries rendered successfully');
       
