@@ -950,7 +950,10 @@ class D3GlobeElement extends HTMLElement {
       
     } catch (error) {
       console.error('❌ Error loading libraries:', error);
-      this.shadowRoot.getElementById('loading').textContent = 'Error loading globe';
+      const loading = this.shadowRoot.getElementById('loading');
+      if (loading) {
+        loading.textContent = 'Error loading globe';
+      }
     }
   }
 
@@ -986,6 +989,8 @@ class D3GlobeElement extends HTMLElement {
       if (loading) {
         loading.textContent = this.getTranslations().loading;
         loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
         loading.style.color = 'white';
         loading.style.fontSize = '18px';
       }
@@ -1048,6 +1053,9 @@ class D3GlobeElement extends HTMLElement {
         if (loading) {
           loading.textContent = 'Loading libraries...';
           loading.style.color = 'white';
+          loading.style.display = 'block';
+          loading.style.opacity = '1';
+          loading.style.visibility = 'visible';
         }
         
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -1067,6 +1075,9 @@ class D3GlobeElement extends HTMLElement {
       if (loading) {
         loading.textContent = 'Loading world map...';
         loading.style.color = 'white';
+        loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
       }
       
       // Fetch with timeout
@@ -1100,10 +1111,19 @@ class D3GlobeElement extends HTMLElement {
       
       console.log('✅ Countries rendered successfully');
       
-      // CRITICAL: Hide loading indicator IMMEDIATELY after successful render
-      if (loading) {
+      // CRITICAL FIX: Hide loading indicator IMMEDIATELY and COMPLETELY
+      if (loading && loading.parentNode) {
         loading.style.display = 'none';
-        loading.textContent = ''; // Clear any error messages
+        loading.style.opacity = '0';
+        loading.style.visibility = 'hidden';
+        loading.textContent = '';
+        
+        // Additional safety: remove from DOM flow
+        setTimeout(() => {
+          if (loading && loading.parentNode) {
+            loading.remove();
+          }
+        }, 100);
       }
       
       console.log('✅ Globe ready with ALL countries (including India, Asia, etc.)');
@@ -1133,6 +1153,8 @@ class D3GlobeElement extends HTMLElement {
           loading.textContent = `Loading... (retry ${retryCount + 1}/${maxRetries})`;
           loading.style.color = '#ffd700'; // Yellow color for retry
           loading.style.display = 'block';
+          loading.style.opacity = '1';
+          loading.style.visibility = 'visible';
         }
         
         // Wait before retry (progressive delay)
@@ -1150,6 +1172,8 @@ class D3GlobeElement extends HTMLElement {
         loading.style.color = '#ff6b6b';
         loading.style.fontSize = '14px';
         loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
         loading.style.cursor = 'pointer';
         
         // Add click to refresh functionality
