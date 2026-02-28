@@ -794,143 +794,26 @@ class RealisticGlobeElement extends HTMLElement {
     
     const { showStarfield, bgColor1 } = this.styleProps;
     
-    // Update background
+    // Update background - use Globe.GL's built-in backgroundImageUrl
     const container = this.shadowRoot.querySelector('.globe-container');
     if (container) {
       if (showStarfield) {
         container.style.background = '#000000';
-        this.createStarfield();
       } else {
         container.style.background = `linear-gradient(135deg, ${this.styleProps.bgColor1} 0%, ${this.styleProps.bgColor2} 100%)`;
-        this.removeStarfield();
       }
     }
     
-    // Globe background color
-    this.globe.backgroundColor(showStarfield ? '#000000' : bgColor1);
+    // Update globe background
+    this.globe
+      .backgroundColor(showStarfield ? 'rgba(0,0,0,0)' : bgColor1)
+      .backgroundImageUrl(showStarfield ? '//unpkg.com/three-globe/example/img/night-sky.png' : null);
     
     // Update markers with new colors
     const mapData = this.getAttribute('map-data');
     if (mapData) {
       this.updateMarkers();
     }
-  }
-
-  createStarfield() {
-    if (!this.globe || this.stars) return;
-    
-    const scene = this.globe.scene();
-    const starCount = 10000; // Increased for more realistic starfield
-    
-    // Create star geometry with THREE layers for depth
-    const starGeometry = new window.THREE.BufferGeometry();
-    const starPositions = [];
-    const starColors = [];
-    const starSizes = [];
-    
-    for (let i = 0; i < starCount; i++) {
-      // Create stars at varying distances for depth
-      const radius = 400 + Math.random() * 600; // Vary distance: 400-1000 units
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.sin(phi) * Math.sin(theta);
-      const z = radius * Math.cos(phi);
-      
-      starPositions.push(x, y, z);
-      
-      // Vary star colors for realism (white, blue-white, yellow-white, red)
-      const colorChoice = Math.random();
-      if (colorChoice < 0.7) {
-        // White stars (most common)
-        starColors.push(1, 1, 1);
-      } else if (colorChoice < 0.85) {
-        // Blue-white stars
-        starColors.push(0.8, 0.9, 1);
-      } else if (colorChoice < 0.95) {
-        // Yellow-white stars
-        starColors.push(1, 0.95, 0.8);
-      } else {
-        // Red stars (rare)
-        starColors.push(1, 0.7, 0.6);
-      }
-      
-      // Vary star sizes with more realistic distribution
-      // Most stars small, few stars large
-      const sizeRandom = Math.random();
-      let size;
-      if (sizeRandom < 0.7) {
-        size = 0.5 + Math.random() * 0.8; // Small stars (0.5-1.3)
-      } else if (sizeRandom < 0.9) {
-        size = 1.3 + Math.random() * 1.2; // Medium stars (1.3-2.5)
-      } else {
-        size = 2.5 + Math.random() * 2; // Large bright stars (2.5-4.5)
-      }
-      starSizes.push(size);
-    }
-    
-    starGeometry.setAttribute('position', new window.THREE.Float32BufferAttribute(starPositions, 3));
-    starGeometry.setAttribute('color', new window.THREE.Float32BufferAttribute(starColors, 3));
-    starGeometry.setAttribute('size', new window.THREE.Float32BufferAttribute(starSizes, 1));
-    
-    // Create realistic star material
-    const starMaterial = new window.THREE.PointsMaterial({
-      size: 1.5,
-      sizeAttenuation: true,
-      vertexColors: true, // Use per-star colors
-      transparent: true,
-      opacity: 0.9,
-      map: this.createStarTexture(),
-      blending: window.THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    
-    // Create and add stars to scene
-    this.stars = new window.THREE.Points(starGeometry, starMaterial);
-    scene.add(this.stars);
-    
-    console.log('✨ Realistic starfield created with', starCount, 'stars');
-  }
-
-  createStarTexture() {
-    // Create a more realistic star texture with soft glow
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Create radial gradient for soft glow
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.1, 'rgba(255, 255, 255, 0.9)');
-    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');
-    gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 64, 64);
-    
-    const texture = new window.THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    
-    return texture;
-  }
-
-  removeStarfield() {
-    if (!this.globe || !this.stars) return;
-    
-    const scene = this.globe.scene();
-    scene.remove(this.stars);
-    this.stars.geometry.dispose();
-    this.stars.material.dispose();
-    if (this.stars.material.map) {
-      this.stars.material.map.dispose();
-    }
-    this.stars = null;
-    
-    console.log('🌑 Starfield removed');
   }
 
   setupControls() {
@@ -1091,7 +974,8 @@ class RealisticGlobeElement extends HTMLElement {
     // Initialize Globe with realistic Earth texture
     this.globe = window.Globe({ animateIn: true })
       (container)
-      .backgroundColor(showStarfield ? '#000000' : bgColor1)
+      .backgroundColor(showStarfield ? 'rgba(0,0,0,0)' : bgColor1) // Transparent for starfield
+      .backgroundImageUrl(showStarfield ? '//unpkg.com/three-globe/example/img/night-sky.png' : null) // Official starfield
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
       .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
       .width(container.clientWidth)
@@ -1109,14 +993,9 @@ class RealisticGlobeElement extends HTMLElement {
     // SMART ZOOM: Only zoom with Ctrl+Scroll or when actively dragging
     this.setupSmartScrolling(controls, container);
     
-    // Create starfield if enabled
-    if (showStarfield) {
-      setTimeout(() => this.createStarfield(), 500);
-    }
-    
     loading.style.display = 'none';
     
-    console.log('✅ Realistic Globe initialized');
+    console.log('✅ Realistic Globe initialized with starfield:', showStarfield);
     
     // Load initial data if available
     const mapData = this.getAttribute('map-data');
