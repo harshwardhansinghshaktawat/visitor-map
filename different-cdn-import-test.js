@@ -542,12 +542,14 @@ class GlobeVisitorMapElement extends HTMLElement {
       
       if (!window.d3) {
         await this.loadScript('https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for d3 to be available
+        await this.waitForGlobal('d3', 5000);
       }
       
       if (!window.topojson) {
         await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for topojson to be available
+        await this.waitForGlobal('topojson', 5000);
       }
       
       if (!window.d3 || !window.topojson) {
@@ -562,6 +564,23 @@ class GlobeVisitorMapElement extends HTMLElement {
       console.error('❌ Error loading libraries:', error);
       this.shadowRoot.getElementById('loading').textContent = 'Error loading globe';
     }
+  }
+
+  waitForGlobal(globalName, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      
+      const checkInterval = setInterval(() => {
+        if (window[globalName]) {
+          clearInterval(checkInterval);
+          console.log(`✅ ${globalName} is now available`);
+          resolve();
+        } else if (Date.now() - startTime > timeout) {
+          clearInterval(checkInterval);
+          reject(new Error(`Timeout waiting for ${globalName}`));
+        }
+      }, 50);
+    });
   }
 
   loadScript(src) {
