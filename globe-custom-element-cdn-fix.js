@@ -10,7 +10,6 @@ class D3GlobeElement extends HTMLElement {
     this.countriesData = null;
     this._destroyed = false;
     
-    // Parse initial style props if available
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
     
@@ -56,7 +55,7 @@ class D3GlobeElement extends HTMLElement {
       if (this._destroyed) return;
       const stylePropsAttr = this.getAttribute('style-props');
       if (stylePropsAttr) {
-        this.styleProps = JSON.parse(stylePropsAttr);
+        try { this.styleProps = JSON.parse(stylePropsAttr); } catch(e) {}
       }
       this.render();
     }, 50);
@@ -67,11 +66,7 @@ class D3GlobeElement extends HTMLElement {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
     if (this.globe) {
-      try {
-        this.globe._destructor();
-      } catch (e) {
-        console.warn('Globe cleanup error:', e);
-      }
+      try { this.globe._destructor(); } catch (e) {}
       this.globe = null;
     }
   }
@@ -88,7 +83,6 @@ class D3GlobeElement extends HTMLElement {
         const newStyleProps = JSON.parse(newValue);
         this.styleProps = { ...this.styleProps, ...newStyleProps };
         console.log('🎨 Style props updated:', this.styleProps);
-        
         if (this.initialRenderDone && this.globe) {
           this.updateGlobeStyles();
         }
@@ -641,175 +635,57 @@ class D3GlobeElement extends HTMLElement {
         visibility: visible;
       }
       
-      /* Responsive Design */
       @media (max-width: 1024px) {
-        .bottom-stats {
-          padding: 12px 16px;
-        }
-        
-        .stats-group {
-          gap: 20px;
-        }
-        
-        .stat-card {
-          min-width: 80px;
-        }
-        
-        .stat-value {
-          font-size: 24px;
-        }
-        
-        .stat-label {
-          font-size: 11px;
-        }
-        
-        .controls-overlay, .zoom-controls {
-          top: 12px;
-        }
-        
-        .control-btn {
-          width: 40px;
-          height: 40px;
-        }
-        
-        .zoom-btn {
-          width: 36px;
-          height: 36px;
-          font-size: 18px;
-        }
+        .bottom-stats { padding: 12px 16px; }
+        .stats-group { gap: 20px; }
+        .stat-card { min-width: 80px; }
+        .stat-value { font-size: 24px; }
+        .stat-label { font-size: 11px; }
+        .controls-overlay, .zoom-controls { top: 12px; }
+        .control-btn { width: 40px; height: 40px; }
+        .zoom-btn { width: 36px; height: 36px; font-size: 18px; }
       }
       
       @media (max-width: 768px) {
-        :host {
-          min-height: 400px;
-        }
-        
-        .globe-container {
-          min-height: 400px;
-          border-radius: 8px;
-        }
-        
-        .bottom-stats {
-          flex-direction: column;
-          padding: 12px;
-          gap: 12px;
-        }
-        
-        .stats-group {
-          width: 100%;
-          gap: 16px;
-        }
-        
-        .stat-divider {
-          display: none;
-        }
-        
-        .legend-group {
-          width: 100%;
-          justify-content: center;
-          padding-top: 8px;
-          border-top: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .stat-card {
-          min-width: 70px;
-        }
-        
-        .stat-value {
-          font-size: 20px;
-        }
-        
-        .map-title {
-          display: none;
-        }
-        
-        .controls-overlay {
-          top: 8px;
-          left: 8px;
-          gap: 6px;
-        }
-        
-        .control-btn {
-          width: 36px;
-          height: 36px;
-        }
-        
-        .zoom-controls {
-          top: 8px;
-          right: 8px;
-          gap: 6px;
-        }
-        
-        .zoom-btn {
-          width: 32px;
-          height: 32px;
-          font-size: 16px;
-        }
+        :host { min-height: 400px; }
+        .globe-container { min-height: 400px; border-radius: 8px; }
+        .bottom-stats { flex-direction: column; padding: 12px; gap: 12px; }
+        .stats-group { width: 100%; gap: 16px; }
+        .stat-divider { display: none; }
+        .legend-group { width: 100%; justify-content: center; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); }
+        .stat-card { min-width: 70px; }
+        .stat-value { font-size: 20px; }
+        .map-title { display: none; }
+        .controls-overlay { top: 8px; left: 8px; gap: 6px; }
+        .control-btn { width: 36px; height: 36px; }
+        .zoom-controls { top: 8px; right: 8px; gap: 6px; }
+        .zoom-btn { width: 32px; height: 32px; font-size: 16px; }
       }
       
       @media (max-width: 480px) {
-        :host {
-          min-height: 350px;
-        }
-        
-        .globe-container {
-          min-height: 350px;
-          border-radius: 6px;
-        }
-        
-        .stat-value {
-          font-size: 18px;
-        }
-        
-        .stat-label {
-          font-size: 10px;
-        }
-        
-        .stat-card {
-          min-width: 60px;
-        }
-        
-        .controls-overlay, .zoom-controls {
-          top: 6px;
-        }
-        
-        .control-btn, .zoom-btn {
-          width: 28px;
-          height: 28px;
-        }
-        
-        .control-btn svg {
-          width: 16px;
-          height: 16px;
-        }
-        
-        .zoom-btn {
-          font-size: 14px;
-        }
+        :host { min-height: 350px; }
+        .globe-container { min-height: 350px; border-radius: 6px; }
+        .stat-value { font-size: 18px; }
+        .stat-label { font-size: 10px; }
+        .stat-card { min-width: 60px; }
+        .controls-overlay, .zoom-controls { top: 6px; }
+        .control-btn, .zoom-btn { width: 28px; height: 28px; }
+        .control-btn svg { width: 16px; height: 16px; }
+        .zoom-btn { font-size: 14px; }
       }
     `;
   }
 
   updateVisibility() {
     const { showZoom, showStats } = this.styleProps;
-    
     const zoomControls = this.shadowRoot.getElementById('zoomControls');
     const bottomStats = this.shadowRoot.getElementById('bottomStats');
-    
-    if (zoomControls) {
-      zoomControls.style.display = showZoom ? 'flex' : 'none';
-    }
-    
-    if (bottomStats) {
-      bottomStats.style.display = showStats ? 'flex' : 'none';
-    }
+    if (zoomControls) zoomControls.style.display = showZoom ? 'flex' : 'none';
+    if (bottomStats) bottomStats.style.display = showStats ? 'flex' : 'none';
   }
 
   updateGlobeStyles() {
-    console.log('🎨 Updating globe styles...');
-    
     if (!this.globe) return;
-    
     const { countryFill, countryStroke } = this.styleProps;
     
     this.globe
@@ -832,9 +708,7 @@ class D3GlobeElement extends HTMLElement {
     }
     
     const mapData = this.getAttribute('map-data');
-    if (mapData) {
-      this.updateMarkers();
-    }
+    if (mapData) this.updateMarkers();
   }
 
   setupControls() {
@@ -849,12 +723,7 @@ class D3GlobeElement extends HTMLElement {
         if (!this.globe) return;
         this.autoRotate = !this.autoRotate;
         this.globe.controls().autoRotate = this.autoRotate;
-        
-        if (this.autoRotate) {
-          autoRotateBtn.classList.add('active');
-        } else {
-          autoRotateBtn.classList.remove('active');
-        }
+        autoRotateBtn.classList.toggle('active', this.autoRotate);
       });
     }
     
@@ -882,98 +751,186 @@ class D3GlobeElement extends HTMLElement {
     }
   }
 
-  // ============================================================
-  // FIX #1: Robust script loader with retry + fallback CDNs
-  // ============================================================
-  loadScript(src, fallbackSrc) {
-    return new Promise((resolve, reject) => {
-      // Check if already loaded
-      const existingScript = document.querySelector(`script[src="${src}"]`);
-      if (existingScript && existingScript.dataset.loaded === 'true') {
-        resolve();
-        return;
+  // ================================================================
+  // CORE FIX: Library loading that works in Wix's sandboxed iframe
+  // 
+  // Problem: Wix custom elements run inside a sandboxed iframe.
+  // Regular <script src="cdn-url"> appends to the iframe document
+  // but may execute in a different window context, so window.THREE
+  // is never set in the context where our code runs.
+  //
+  // Solution: Use fetch() to download script text, then execute it
+  // via a Blob URL, which guarantees execution in the CURRENT
+  // document's global scope.
+  // ================================================================
+
+  /**
+   * Loads a library by fetching its source and executing it in the
+   * current window context. Falls back to script tag if fetch fails.
+   */
+  async loadLibrary(globalName, urls) {
+    // Check all possible global references first
+    if (window[globalName] || self[globalName] || globalThis[globalName]) {
+      // Normalize to window for consistent access
+      if (!window[globalName]) {
+        window[globalName] = self[globalName] || globalThis[globalName];
+      }
+      console.log(`✅ ${globalName} already available`);
+      return;
+    }
+
+    const allUrls = Array.isArray(urls) ? urls : [urls];
+
+    for (const url of allUrls) {
+      // ---- METHOD 1: fetch + Blob URL (preferred for Wix iframe) ----
+      try {
+        console.log(`📥 [${globalName}] Fetching from ${url}...`);
+        
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+          mode: 'cors',
+          cache: 'force-cache' // Use browser cache if available
+        });
+        clearTimeout(timeout);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const scriptText = await response.text();
+        console.log(`📦 [${globalName}] Downloaded ${(scriptText.length / 1024).toFixed(0)}KB, executing via Blob...`);
+        
+        // Create a Blob URL and load it as a script tag
+        // This ensures the script executes in the CURRENT document's global scope
+        const blob = new Blob([scriptText], { type: 'text/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = blobUrl;
+          
+          script.onload = () => {
+            URL.revokeObjectURL(blobUrl);
+            resolve();
+          };
+          script.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error('Blob script execution failed'));
+          };
+          
+          document.head.appendChild(script);
+        });
+        
+        // Brief wait for UMD module to assign globals
+        await new Promise(r => setTimeout(r, 100));
+        
+        // Check all global references
+        const ref = window[globalName] || self[globalName] || globalThis[globalName];
+        if (ref) {
+          if (!window[globalName]) window[globalName] = ref;
+          console.log(`✅ [${globalName}] Loaded via fetch+blob from ${url}`);
+          return;
+        }
+        
+        console.warn(`⚠️ [${globalName}] Blob executed but global not found, trying next method...`);
+      } catch (fetchErr) {
+        console.warn(`⚠️ [${globalName}] Fetch+blob failed for ${url}:`, fetchErr.message);
       }
 
-      const tryLoad = (url, isFallback) => {
-        // Remove any previous failed attempt for this URL
-        const oldScript = document.querySelector(`script[src="${url}"]`);
-        if (oldScript && oldScript.dataset.loaded !== 'true') {
-          oldScript.remove();
+      // ---- METHOD 2: fetch + Function constructor (eval alternative) ----
+      try {
+        console.log(`📥 [${globalName}] Trying fetch+Function for ${url}...`);
+        
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+          mode: 'cors',
+          cache: 'force-cache'
+        });
+        clearTimeout(timeout);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const scriptText = await response.text();
+        
+        // Execute using Function constructor - runs in global scope
+        // The 'this' binding ensures UMD modules attach to window
+        const fn = new Function(scriptText);
+        fn.call(window);
+        
+        await new Promise(r => setTimeout(r, 100));
+        
+        const ref = window[globalName] || self[globalName] || globalThis[globalName];
+        if (ref) {
+          if (!window[globalName]) window[globalName] = ref;
+          console.log(`✅ [${globalName}] Loaded via fetch+Function from ${url}`);
+          return;
         }
-
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        // FIX: Add crossorigin to help with CORS on some Wix environments
-        script.crossOrigin = 'anonymous';
-
-        // FIX: Per-script timeout — if onload never fires, reject
-        const loadTimeout = setTimeout(() => {
-          script.onload = null;
-          script.onerror = null;
-          console.warn(`⏱️ Script load timeout: ${url}`);
-          if (fallbackSrc && !isFallback) {
-            console.log(`🔄 Trying fallback CDN: ${fallbackSrc}`);
-            tryLoad(fallbackSrc, true);
-          } else {
-            reject(new Error(`Timeout loading script: ${url}`));
-          }
-        }, 15000); // 15s per script
-
-        script.onload = () => {
-          clearTimeout(loadTimeout);
-          script.dataset.loaded = 'true';
-          console.log(`✅ Script loaded: ${url}`);
-          resolve();
-        };
-
-        script.onerror = () => {
-          clearTimeout(loadTimeout);
-          console.warn(`❌ Script failed: ${url}`);
-          if (fallbackSrc && !isFallback) {
-            console.log(`🔄 Trying fallback CDN: ${fallbackSrc}`);
-            tryLoad(fallbackSrc, true);
-          } else {
-            reject(new Error(`Failed to load script: ${url}`));
-          }
-        };
-
-        document.head.appendChild(script);
-      };
-
-      tryLoad(src, false);
-    });
-  }
-
-  // ============================================================
-  // FIX #2: Smarter global wait with longer timeout + polling
-  // ============================================================
-  waitForGlobal(globalName, timeout = 15000) {
-    return new Promise((resolve, reject) => {
-      // Immediate check
-      if (window[globalName]) {
-        console.log(`✅ ${globalName} already available`);
-        resolve();
-        return;
+        
+        console.warn(`⚠️ [${globalName}] Function executed but global not found`);
+      } catch (fnErr) {
+        console.warn(`⚠️ [${globalName}] Fetch+Function failed for ${url}:`, fnErr.message);
       }
 
-      const startTime = Date.now();
-      const checkInterval = setInterval(() => {
-        if (window[globalName]) {
-          clearInterval(checkInterval);
-          console.log(`✅ ${globalName} is now available (waited ${Date.now() - startTime}ms)`);
-          resolve();
-        } else if (Date.now() - startTime > timeout) {
-          clearInterval(checkInterval);
-          reject(new Error(`Timeout waiting for ${globalName} after ${timeout}ms`));
+      // ---- METHOD 3: Traditional script tag (last resort) ----
+      try {
+        console.log(`📥 [${globalName}] Trying script tag for ${url}...`);
+        
+        // Remove any existing broken script tags for this URL
+        const existing = document.querySelector(`script[src="${url}"]`);
+        if (existing) existing.remove();
+        
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = url;
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          
+          const loadTimeout = setTimeout(() => {
+            script.onload = null;
+            script.onerror = null;
+            reject(new Error('Script tag timeout'));
+          }, 20000);
+          
+          script.onload = () => {
+            clearTimeout(loadTimeout);
+            resolve();
+          };
+          script.onerror = () => {
+            clearTimeout(loadTimeout);
+            reject(new Error('Script tag error'));
+          };
+          
+          document.head.appendChild(script);
+        });
+        
+        // Extended polling for global availability
+        const startTime = Date.now();
+        while (Date.now() - startTime < 5000) {
+          const ref = window[globalName] || self[globalName] || globalThis[globalName];
+          if (ref) {
+            if (!window[globalName]) window[globalName] = ref;
+            console.log(`✅ [${globalName}] Loaded via script tag from ${url}`);
+            return;
+          }
+          await new Promise(r => setTimeout(r, 100));
         }
-      }, 100); // Check every 100ms instead of 50ms to reduce CPU
-    });
+        
+        console.warn(`⚠️ [${globalName}] Script tag loaded but global not found`);
+      } catch (scriptErr) {
+        console.warn(`⚠️ [${globalName}] Script tag failed for ${url}:`, scriptErr.message);
+      }
+    }
+
+    throw new Error(`Failed to load ${globalName} from all sources and methods`);
   }
 
-  // ============================================================
-  // FIX #3: Entire library loading flow with retries & fallbacks
-  // ============================================================
+  /**
+   * Main library loading orchestrator with retry logic
+   */
   async loadGlobeLibrary() {
     const maxAttempts = 3;
     
@@ -992,40 +949,30 @@ class D3GlobeElement extends HTMLElement {
         }
 
         // --- Load Three.js ---
-        if (!window.THREE) {
-          await this.loadScript(
-            'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
-            'https://unpkg.com/three@0.160.0/build/three.min.js'
-          );
-          await this.waitForGlobal('THREE', 15000);
-        }
-        if (!window.THREE) throw new Error('Three.js failed to initialize');
+        await this.loadLibrary('THREE', [
+          'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
+          'https://unpkg.com/three@0.160.0/build/three.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+        ]);
         console.log('✅ Three.js ready');
 
         if (this._destroyed) return;
 
         // --- Load TopoJSON ---
-        if (!window.topojson) {
-          await this.loadScript(
-            'https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js',
-            'https://unpkg.com/topojson@3.0.2/dist/topojson.min.js'
-          );
-          await this.waitForGlobal('topojson', 15000);
-        }
-        if (!window.topojson) throw new Error('TopoJSON failed to initialize');
+        await this.loadLibrary('topojson', [
+          'https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js',
+          'https://unpkg.com/topojson@3.0.2/dist/topojson.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js'
+        ]);
         console.log('✅ TopoJSON ready');
 
         if (this._destroyed) return;
 
         // --- Load Globe.GL ---
-        if (!window.Globe) {
-          await this.loadScript(
-            'https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js',
-            'https://unpkg.com/globe.gl@2.27.2/dist/globe.gl.min.js'
-          );
-          await this.waitForGlobal('Globe', 15000);
-        }
-        if (!window.Globe) throw new Error('Globe.GL failed to initialize');
+        await this.loadLibrary('Globe', [
+          'https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js',
+          'https://unpkg.com/globe.gl@2.27.2/dist/globe.gl.min.js'
+        ]);
         console.log('✅ Globe.GL ready');
 
         if (this._destroyed) return;
@@ -1033,20 +980,16 @@ class D3GlobeElement extends HTMLElement {
         // All libraries loaded — initialize globe
         await this.initializeGlobe();
         window.addEventListener('resize', this.handleResize);
-        
-        // Success — break out of retry loop
-        return;
+        return; // Success
 
       } catch (error) {
-        console.error(`❌ Library loading failed (attempt ${attempt}/${maxAttempts}):`, error);
+        console.error(`❌ Library loading failed (attempt ${attempt}/${maxAttempts}):`, error.message);
         
         if (attempt < maxAttempts) {
-          // Wait before retrying (progressive backoff)
           const waitMs = attempt * 2000;
           console.log(`⏳ Waiting ${waitMs}ms before retry...`);
           await new Promise(r => setTimeout(r, waitMs));
         } else {
-          // Final failure
           console.error('❌ All loading attempts failed');
           const loading = this.shadowRoot.getElementById('loading');
           if (loading) {
@@ -1068,19 +1011,12 @@ class D3GlobeElement extends HTMLElement {
   }
 
   handleResize() {
-    if (this.resizeTimeout) {
-      clearTimeout(this.resizeTimeout);
-    }
-    
+    if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
     this.resizeTimeout = setTimeout(() => {
       if (!this.globe) return;
-      
       const container = this.shadowRoot.getElementById('globeViz');
       if (!container) return;
-      
-      this.globe
-        .width(container.clientWidth)
-        .height(container.clientHeight);
+      this.globe.width(container.clientWidth).height(container.clientHeight);
     }, 250);
   }
 
@@ -1106,9 +1042,9 @@ class D3GlobeElement extends HTMLElement {
         loading.style.color = 'white';
       }
       
-      // FIX: Wait for container to have actual dimensions
+      // Wait for container to have actual dimensions
       let waitCount = 0;
-      while ((!container.clientWidth || !container.clientHeight) && waitCount < 20) {
+      while ((!container.clientWidth || !container.clientHeight) && waitCount < 30) {
         await new Promise(r => setTimeout(r, 100));
         waitCount++;
       }
@@ -1146,7 +1082,7 @@ class D3GlobeElement extends HTMLElement {
         try {
           this.setupSmartScrolling(controls, container);
         } catch (scrollError) {
-          console.warn('⚠️ Smart scrolling setup failed (non-critical):', scrollError);
+          console.warn('⚠️ Smart scrolling setup failed:', scrollError);
         }
       }
       
@@ -1162,7 +1098,6 @@ class D3GlobeElement extends HTMLElement {
   async loadCountriesData(loading, countryFill, countryStroke, retryCount = 0) {
     const maxRetries = 3;
     
-    // FIX: Fallback URLs for world data
     const worldDataUrls = [
       'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
       'https://unpkg.com/world-atlas@2/countries-110m.json'
@@ -1170,27 +1105,12 @@ class D3GlobeElement extends HTMLElement {
     
     try {
       if (!window.topojson) {
-        console.log('⏳ Waiting for TopoJSON...');
-        if (loading) {
-          loading.textContent = 'Loading libraries...';
-          loading.style.color = 'white';
-          loading.style.display = 'block';
-          loading.style.opacity = '1';
-          loading.style.visibility = 'visible';
-        }
-        
         await new Promise(resolve => setTimeout(resolve, 500));
-        
         if (!window.topojson && retryCount < maxRetries) {
           return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
         }
-        
-        if (!window.topojson) {
-          throw new Error('TopoJSON library not loaded');
-        }
+        if (!window.topojson) throw new Error('TopoJSON library not loaded');
       }
-      
-      console.log('📥 Fetching countries data...');
       
       if (loading) {
         loading.textContent = 'Loading world map...';
@@ -1200,32 +1120,26 @@ class D3GlobeElement extends HTMLElement {
         loading.style.visibility = 'visible';
       }
       
-      // FIX: Try multiple URLs for world data
       let worldData = null;
       let lastError = null;
       
       for (const url of worldDataUrls) {
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
-          
+          const timeout = setTimeout(() => controller.abort(), 15000);
           const response = await fetch(url, { signal: controller.signal });
           clearTimeout(timeout);
-          
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
           worldData = await response.json();
           console.log(`✅ World data loaded from: ${url}`);
-          break; // Success
+          break;
         } catch (fetchErr) {
           lastError = fetchErr;
           console.warn(`⚠️ Failed to fetch from ${url}:`, fetchErr.message);
         }
       }
       
-      if (!worldData) {
-        throw lastError || new Error('All world data URLs failed');
-      }
+      if (!worldData) throw lastError || new Error('All world data URLs failed');
       
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
@@ -1237,31 +1151,21 @@ class D3GlobeElement extends HTMLElement {
         .polygonStrokeColor(() => countryStroke || '#667eea')
         .polygonAltitude(0.01);
       
-      console.log('✅ Countries rendered successfully');
-      
       // Hide loading
       if (loading && loading.parentNode) {
         loading.style.display = 'none';
         loading.style.opacity = '0';
         loading.style.visibility = 'hidden';
         loading.textContent = '';
-        
-        setTimeout(() => {
-          if (loading && loading.parentNode) {
-            loading.remove();
-          }
-        }, 100);
+        setTimeout(() => { if (loading && loading.parentNode) loading.remove(); }, 100);
       }
       
       // Load markers
       try {
         const mapData = this.getAttribute('map-data');
-        if (mapData) {
-          console.log('📍 Loading markers...');
-          this.updateMarkers();
-        }
-      } catch (markerError) {
-        console.warn('⚠️ Marker loading failed (non-critical):', markerError);
+        if (mapData) this.updateMarkers();
+      } catch (e) {
+        console.warn('⚠️ Marker loading failed:', e);
       }
       
       return true;
@@ -1270,8 +1174,6 @@ class D3GlobeElement extends HTMLElement {
       console.error('❌ Error loading countries (attempt ' + (retryCount + 1) + '):', error);
       
       if (retryCount < maxRetries) {
-        console.log(`🔄 Retry ${retryCount + 1}/${maxRetries}...`);
-        
         if (loading) {
           loading.textContent = `Loading... (retry ${retryCount + 1}/${maxRetries})`;
           loading.style.color = '#ffd700';
@@ -1279,20 +1181,13 @@ class D3GlobeElement extends HTMLElement {
           loading.style.opacity = '1';
           loading.style.visibility = 'visible';
         }
-        
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
       }
       
-      console.error('❌ Failed to load countries after', maxRetries, 'attempts');
-      
       if (loading) {
         loading.textContent = 'Unable to load map. Click to refresh.';
         loading.style.color = '#ff6b6b';
-        loading.style.fontSize = '14px';
-        loading.style.display = 'block';
-        loading.style.opacity = '1';
-        loading.style.visibility = 'visible';
         loading.style.cursor = 'pointer';
         loading.style.pointerEvents = 'auto';
         loading.onclick = () => window.location.reload();
@@ -1300,12 +1195,8 @@ class D3GlobeElement extends HTMLElement {
       
       try {
         const mapData = this.getAttribute('map-data');
-        if (mapData) {
-          this.updateMarkers();
-        }
-      } catch (markerError) {
-        console.warn('⚠️ Failed to load markers:', markerError);
-      }
+        if (mapData) this.updateMarkers();
+      } catch (e) {}
       
       return false;
     }
@@ -1343,40 +1234,28 @@ class D3GlobeElement extends HTMLElement {
     container.addEventListener('pointerup', onPointerUp);
     container.addEventListener('pointermove', onPointerMove);
     
-    const wheelHandler = (event) => {
-      if (event.ctrlKey || event.metaKey) {
-        controls.enableZoom = true;
-        return;
-      }
-      if (isInteracting) {
+    container.addEventListener('wheel', (event) => {
+      if (event.ctrlKey || event.metaKey || isInteracting) {
         controls.enableZoom = true;
         return;
       }
       controls.enableZoom = false;
-    };
+    }, { passive: true });
     
-    container.addEventListener('wheel', wheelHandler, { passive: true });
     controls.enableZoom = false;
   }
 
   updateMarkers() {
-    if (!this.globe) {
-      console.log('⏳ Globe not initialized yet');
-      return;
-    }
+    if (!this.globe) return;
     
     const mapData = this.getAttribute('map-data');
-    if (!mapData) {
-      console.log('⚠️ No map data attribute');
-      return;
-    }
+    if (!mapData) return;
     
     try {
       const locations = JSON.parse(mapData);
       const t = this.getTranslations();
       
       console.log('📍 Updating markers, total cities:', locations.length);
-      
       if (locations.length === 0) return;
       
       const { markerRecent, markerOld, markerStyle, markerSize, showPulse, showVisitCount, badgeBg, badgeText, showTooltip } = this.styleProps;
@@ -1405,67 +1284,44 @@ class D3GlobeElement extends HTMLElement {
           const color = d.isRecent ? markerRecent : markerOld;
           const size = markerSize || 24;
           
+          const badgeHtml = (topOffset, rightOffset) => {
+            if (!showVisitCount || d.totalVisits <= 1) return '';
+            return `<div style="position: absolute; top: ${topOffset}px; right: ${rightOffset}px; background: ${badgeBg}; color: ${badgeText}; 
+                        border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
+                        justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none;">
+              ${d.totalVisits > 99 ? '99+' : d.totalVisits}
+            </div>`;
+          };
+          
           if (markerStyle === 'pin') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
                 <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); display: block;">
-                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
-                        fill="${color}"/>
+                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="${color}"/>
                 </svg>
-                ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
-                              border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none;">
-                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>
-                ` : ''}
-              </div>
-            `;
+                ${badgeHtml(-8, -8)}
+              </div>`;
           } else if (markerStyle === 'circle') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; 
-                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
-                ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
-                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
-                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>
-                ` : ''}
-              </div>
-            `;
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
+                ${badgeHtml(-6, -6)}
+              </div>`;
           } else if (markerStyle === 'square') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <div style="width: ${size}px; height: ${size}px; background: ${color}; 
-                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
-                ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
-                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10; pointer-events: none;">
-                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>
-                ` : ''}
-              </div>
-            `;
+                <div style="width: ${size}px; height: ${size}px; background: ${color}; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
+                ${badgeHtml(-6, -6)}
+              </div>`;
           } else if (markerStyle === 'star') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
                 <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); display: block;">
-                  <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
-                        fill="${color}" stroke="white" stroke-width="1.5"/>
+                  <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" fill="${color}" stroke="white" stroke-width="1.5"/>
                 </svg>
-                ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
-                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
-                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
-                    ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>
-                ` : ''}
-              </div>
-            `;
+                ${badgeHtml(-6, -6)}
+              </div>`;
           }
           
           if (showTooltip && tooltip) {
@@ -1524,7 +1380,6 @@ class D3GlobeElement extends HTMLElement {
         this.globe.ringsData([]);
       }
       
-      // Update stats display
       const cityCountEl = this.shadowRoot.getElementById('cityCount');
       const totalVisitsEl = this.shadowRoot.getElementById('totalVisits');
       const recentCountEl = this.shadowRoot.getElementById('recentCount');
