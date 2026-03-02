@@ -56,24 +56,13 @@ class D3GlobeElement extends HTMLElement {
         this.styleProps = JSON.parse(stylePropsAttr);
       }
       this.render();
-    }, 100);
+    }, 50);
   }
 
   disconnectedCallback() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
     if (this.globe) {
-      // Clean up Three.js scene to prevent memory leaks
-      const scene = this.globe.scene();
-      if (scene) {
-        scene.traverse(object => {
-          if (object.geometry) object.geometry.dispose();
-          if (object.material) {
-            if (Array.isArray(object.material)) object.material.forEach(m => m.dispose());
-            else object.material.dispose();
-          }
-        });
-      }
       this.globe._destructor();
     }
   }
@@ -903,7 +892,6 @@ class D3GlobeElement extends HTMLElement {
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
-      script.crossOrigin = 'anonymous';
       
       script.onload = () => {
         script.dataset.loaded = 'true';
@@ -919,7 +907,7 @@ class D3GlobeElement extends HTMLElement {
     });
   }
 
-  waitForGlobal(globalName, timeout = 20000) {
+  waitForGlobal(globalName, timeout = 5000) {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
       
@@ -932,7 +920,7 @@ class D3GlobeElement extends HTMLElement {
           clearInterval(checkInterval);
           reject(new Error(`Timeout waiting for ${globalName}`));
         }
-      }, 100);
+      }, 50);
     });
   }
 
@@ -942,8 +930,8 @@ class D3GlobeElement extends HTMLElement {
       
       // Load Three.js first (required by Globe.GL)
       if (!window.THREE) {
-        await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.min.js');
-        await this.waitForGlobal('THREE');
+        await this.loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+        await this.waitForGlobal('THREE', 5000);
       }
       
       if (!window.THREE) {
@@ -951,10 +939,21 @@ class D3GlobeElement extends HTMLElement {
       }
       console.log('✅ Three.js loaded');
       
+      // Load TopoJSON (needed for country data)
+      if (!window.topojson) {
+        await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
+        await this.waitForGlobal('topojson', 5000);
+      }
+      
+      if (!window.topojson) {
+        throw new Error('TopoJSON failed to load');
+      }
+      console.log('✅ TopoJSON loaded');
+      
       // Load Globe.GL
       if (!window.Globe) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.45.0/dist/globe.gl.min.js');
-        await this.waitForGlobal('Globe');
+        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
+        await this.waitForGlobal('Globe', 5000);
       }
       
       if (!window.Globe) {
@@ -1063,6 +1062,30 @@ class D3GlobeElement extends HTMLElement {
     const maxRetries = 3;
     
     try {
+      // Ensure TopoJSON is loaded
+      if (!window.topojson) {
+        console.log('⏳ Waiting for TopoJSON to load...');
+        
+        if (loading) {
+          loading.textContent = 'Loading libraries...';
+          loading.style.color = 'white';
+          loading.style.display = 'block';
+          loading.style.opacity = '1';
+          loading.style.visibility = 'visible';
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!window.topojson && retryCount < maxRetries) {
+          console.log('🔄 Retrying TopoJSON check...');
+          return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
+        }
+        
+        if (!window.topojson) {
+          throw new Error('TopoJSON library not loaded');
+        }
+      }
+      
       console.log('📥 Fetching countries data...');
       
       if (loading) {
@@ -1075,9 +1098,9 @@ class D3GlobeElement extends HTMLElement {
       
       // Fetch with timeout
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson', {
+      const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
         signal: controller.signal
       });
       
@@ -1087,7 +1110,10 @@ class D3GlobeElement extends HTMLElement {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      this.countriesData = await response.json();
+      const worldData = await response.json();
+      
+      // Convert TopoJSON to GeoJSON
+      this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
       // Display countries using POLYGONS - REMOVED polygonSideColorDarker
