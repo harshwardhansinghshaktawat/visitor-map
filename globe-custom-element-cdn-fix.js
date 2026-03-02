@@ -9,6 +9,7 @@ class D3GlobeElement extends HTMLElement {
     this.autoRotate = true;
     this.countriesData = null;
     
+    // Parse initial style props if available
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
     
@@ -631,6 +632,7 @@ class D3GlobeElement extends HTMLElement {
         visibility: visible;
       }
       
+      /* Responsive Design */
       @media (max-width: 1024px) {
         .bottom-stats {
           padding: 12px 16px;
@@ -801,6 +803,7 @@ class D3GlobeElement extends HTMLElement {
     
     const { countryFill, countryStroke } = this.styleProps;
     
+    // Update globe base (ocean) color
     this.globe
       .globeMaterial(new window.THREE.MeshPhongMaterial({
         color: this.styleProps.bgColor1 || '#667eea',
@@ -811,6 +814,7 @@ class D3GlobeElement extends HTMLElement {
       .atmosphereColor(countryStroke || '#667eea')
       .atmosphereAltitude(0.15);
     
+    // Update country colors using POLYGONS for accurate rendering
     if (this.countriesData) {
       this.globe
         .polygonsData(this.countriesData.features)
@@ -820,6 +824,7 @@ class D3GlobeElement extends HTMLElement {
         .polygonAltitude(0.01);
     }
     
+    // Update markers with new colors
     const mapData = this.getAttribute('map-data');
     if (mapData) {
       this.updateMarkers();
@@ -833,7 +838,7 @@ class D3GlobeElement extends HTMLElement {
     const zoomOut = this.shadowRoot.getElementById('zoomOut');
     
     if (autoRotateBtn) {
-      autoRotateBtn.classList.add('active');
+      autoRotateBtn.classList.add('active'); // Start with auto-rotate on
       autoRotateBtn.addEventListener('click', () => {
         if (!this.globe) return;
         this.autoRotate = !this.autoRotate;
@@ -887,7 +892,6 @@ class D3GlobeElement extends HTMLElement {
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
-      script.crossOrigin = 'anonymous';
       
       script.onload = () => {
         script.dataset.loaded = 'true';
@@ -903,14 +907,10 @@ class D3GlobeElement extends HTMLElement {
     });
   }
 
-  waitForGlobal(globalName, timeout = 5000) {
+  waitForGlobal(globalName, timeout = 10000) {
     return new Promise((resolve, reject) => {
-      if (window[globalName]) {
-        resolve();
-        return;
-      }
-      
       const startTime = Date.now();
+      
       const checkInterval = setInterval(() => {
         if (window[globalName]) {
           clearInterval(checkInterval);
@@ -928,84 +928,37 @@ class D3GlobeElement extends HTMLElement {
     try {
       console.log('📦 Loading Globe.GL library...');
       
-      // CRITICAL FIX: Use Three.js r128 instead of r160
+      // Load Three.js first (required by Globe.GL)
       if (!window.THREE) {
-        const threeUrls = [
-          'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-          'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
-          'https://unpkg.com/three@0.128.0/build/three.min.js'
-        ];
-        
-        let loaded = false;
-        for (const url of threeUrls) {
-          try {
-            await this.loadScript(url);
-            await this.waitForGlobal('THREE', 5000);
-            loaded = true;
-            console.log(`✅ Three.js r128 loaded from: ${url}`);
-            break;
-          } catch (error) {
-            console.warn(`⚠️ Failed to load from ${url}`);
-          }
-        }
-        
-        if (!loaded) {
-          throw new Error('Three.js failed to load');
-        }
+        await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.min.js');
+        await this.waitForGlobal('THREE', 10000);
       }
       
+      if (!window.THREE) {
+        throw new Error('Three.js failed to load');
+      }
       console.log('✅ Three.js loaded');
       
+      // Load TopoJSON (needed for country data)
       if (!window.topojson) {
-        const topojsonUrls = [
-          'https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js',
-          'https://unpkg.com/topojson@3.0.2/dist/topojson.min.js'
-        ];
-        
-        let loaded = false;
-        for (const url of topojsonUrls) {
-          try {
-            await this.loadScript(url);
-            await this.waitForGlobal('topojson', 5000);
-            loaded = true;
-            console.log(`✅ TopoJSON loaded from: ${url}`);
-            break;
-          } catch (error) {
-            console.warn(`⚠️ Failed to load from ${url}`);
-          }
-        }
-        
-        if (!loaded) {
-          throw new Error('TopoJSON failed to load');
-        }
+        await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
+        await this.waitForGlobal('topojson', 10000);
       }
       
+      if (!window.topojson) {
+        throw new Error('TopoJSON failed to load');
+      }
       console.log('✅ TopoJSON loaded');
       
+      // Load Globe.GL
       if (!window.Globe) {
-        const globeUrls = [
-          'https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js',
-          'https://unpkg.com/globe.gl@2.27.2/dist/globe.gl.min.js'
-        ];
-        
-        let loaded = false;
-        for (const url of globeUrls) {
-          try {
-            await this.loadScript(url);
-            await this.waitForGlobal('Globe', 5000);
-            loaded = true;
-            console.log(`✅ Globe.GL loaded from: ${url}`);
-            break;
-          } catch (error) {
-            console.warn(`⚠️ Failed to load from ${url}`);
-          }
-        }
-        
-        if (!loaded) {
-          throw new Error('Globe.GL failed to load');
-        }
+        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.45.0/dist/globe.gl.min.js');
+        await this.waitForGlobal('Globe', 10000);
       }
       
+      if (!window.Globe) {
+        throw new Error('Globe.GL failed to load');
+      }
       console.log('✅ Globe.GL loaded');
       
       await this.initializeGlobe();
@@ -1015,23 +968,7 @@ class D3GlobeElement extends HTMLElement {
       console.error('❌ Error loading libraries:', error);
       const loading = this.shadowRoot.getElementById('loading');
       if (loading) {
-        loading.innerHTML = `
-          <div style="text-align: center;">
-            <div style="font-size: 16px; margin-bottom: 10px;">⚠️ Failed to load globe</div>
-            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 12px;">Please refresh the page</div>
-            <button onclick="window.location.reload()" style="
-              background: white;
-              color: #667eea;
-              border: none;
-              padding: 8px 16px;
-              border-radius: 6px;
-              cursor: pointer;
-              font-weight: 600;
-              font-size: 12px;
-            ">Refresh</button>
-          </div>
-        `;
-        loading.style.color = '#ff6b6b';
+        loading.textContent = 'Error loading globe';
       }
     }
   }
@@ -1064,6 +1001,7 @@ class D3GlobeElement extends HTMLElement {
     const { bgColor1, countryFill, countryStroke } = this.styleProps;
     
     try {
+      // Show initial loading message
       if (loading) {
         loading.textContent = this.getTranslations().loading;
         loading.style.display = 'block';
@@ -1073,6 +1011,7 @@ class D3GlobeElement extends HTMLElement {
         loading.style.fontSize = '18px';
       }
       
+      // Initialize Globe first
       this.globe = window.Globe({ animateIn: true })
         (container)
         .backgroundColor(bgColor1 || '#667eea')
@@ -1088,6 +1027,7 @@ class D3GlobeElement extends HTMLElement {
         .height(container.clientHeight)
         .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
       
+      // Configure controls with SMART SCROLL HANDLING
       const controls = this.globe.controls();
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.5;
@@ -1097,8 +1037,10 @@ class D3GlobeElement extends HTMLElement {
       
       console.log('✅ Globe initialized, loading countries...');
       
+      // Load countries data with retry logic
       const success = await this.loadCountriesData(loading, countryFill, countryStroke);
       
+      // Setup smart scrolling after successful load (in try-catch to be safe)
       if (success && this.globe) {
         try {
           this.setupSmartScrolling(controls, container);
@@ -1120,6 +1062,7 @@ class D3GlobeElement extends HTMLElement {
     const maxRetries = 3;
     
     try {
+      // Ensure TopoJSON is loaded
       if (!window.topojson) {
         console.log('⏳ Waiting for TopoJSON to load...');
         
@@ -1153,8 +1096,9 @@ class D3GlobeElement extends HTMLElement {
         loading.style.visibility = 'visible';
       }
       
+      // Fetch with timeout
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
+      const timeout = setTimeout(() => controller.abort(), 20000);
       
       const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
         signal: controller.signal
@@ -1168,9 +1112,11 @@ class D3GlobeElement extends HTMLElement {
       
       const worldData = await response.json();
       
+      // Convert TopoJSON to GeoJSON
       this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
       console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
       
+      // Display countries using POLYGONS - REMOVED polygonSideColorDarker
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
@@ -1180,12 +1126,14 @@ class D3GlobeElement extends HTMLElement {
       
       console.log('✅ Countries rendered successfully');
       
+      // CRITICAL FIX: Hide loading indicator IMMEDIATELY and COMPLETELY
       if (loading && loading.parentNode) {
         loading.style.display = 'none';
         loading.style.opacity = '0';
         loading.style.visibility = 'hidden';
         loading.textContent = '';
         
+        // Additional safety: remove from DOM flow
         setTimeout(() => {
           if (loading && loading.parentNode) {
             loading.remove();
@@ -1193,8 +1141,9 @@ class D3GlobeElement extends HTMLElement {
         }, 100);
       }
       
-      console.log('✅ Globe ready with ALL countries');
+      console.log('✅ Globe ready with ALL countries (including India, Asia, etc.)');
       
+      // Load markers in separate try-catch (non-critical - don't trigger retry)
       try {
         const mapData = this.getAttribute('map-data');
         if (mapData) {
@@ -1205,27 +1154,32 @@ class D3GlobeElement extends HTMLElement {
         console.warn('⚠️ Marker loading failed (non-critical):', markerError);
       }
       
+      // Return success (smart scrolling setup will be done by initializeGlobe)
       return true;
       
     } catch (error) {
       console.error('❌ Error loading countries (attempt ' + (retryCount + 1) + '):', error);
       
+      // Retry logic
       if (retryCount < maxRetries) {
         console.log(`🔄 Retry ${retryCount + 1}/${maxRetries}...`);
         
         if (loading) {
           loading.textContent = `Loading... (retry ${retryCount + 1}/${maxRetries})`;
-          loading.style.color = '#ffd700';
+          loading.style.color = '#ffd700'; // Yellow color for retry
           loading.style.display = 'block';
           loading.style.opacity = '1';
           loading.style.visibility = 'visible';
         }
         
+        // Wait before retry (progressive delay)
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         
+        // Recursive retry
         return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
       }
       
+      // Max retries exceeded - show final error
       console.error('❌ Failed to load countries after', maxRetries, 'attempts');
       
       if (loading) {
@@ -1237,9 +1191,11 @@ class D3GlobeElement extends HTMLElement {
         loading.style.visibility = 'visible';
         loading.style.cursor = 'pointer';
         
+        // Add click to refresh functionality
         loading.onclick = () => window.location.reload();
       }
       
+      // Still try to load markers if available (globe works without countries)
       try {
         const mapData = this.getAttribute('map-data');
         if (mapData) {
@@ -1250,23 +1206,28 @@ class D3GlobeElement extends HTMLElement {
         console.warn('⚠️ Failed to load markers:', markerError);
       }
       
+      // Return failure
       return false;
     }
   }
 
   setupSmartScrolling(controls, container) {
+    // Track if user is actively interacting with the globe
     let isInteracting = false;
     let interactionTimeout = null;
     
+    // Enable zoom when user starts dragging
     const onPointerDown = () => {
       isInteracting = true;
       controls.enableZoom = true;
       
+      // Clear any existing timeout
       if (interactionTimeout) {
         clearTimeout(interactionTimeout);
       }
     };
     
+    // Disable zoom after user stops interacting (1 second delay)
     const onPointerUp = () => {
       interactionTimeout = setTimeout(() => {
         isInteracting = false;
@@ -1274,10 +1235,12 @@ class D3GlobeElement extends HTMLElement {
       }, 1000);
     };
     
+    // Re-enable zoom when mouse moves over globe
     const onPointerMove = () => {
       if (isInteracting) {
         controls.enableZoom = true;
         
+        // Reset timeout
         if (interactionTimeout) {
           clearTimeout(interactionTimeout);
         }
@@ -1289,29 +1252,37 @@ class D3GlobeElement extends HTMLElement {
       }
     };
     
+    // Attach listeners to the globe container
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointerup', onPointerUp);
     container.addEventListener('pointermove', onPointerMove);
     
+    // Custom wheel handler for smart zooming
     const wheelHandler = (event) => {
+      // Allow zoom with Ctrl+Scroll (standard browser convention)
       if (event.ctrlKey || event.metaKey) {
         controls.enableZoom = true;
-        return;
+        return; // Let Three.js handle the zoom
       }
       
+      // If actively interacting, allow zoom
       if (isInteracting) {
         controls.enableZoom = true;
-        return;
+        return; // Let Three.js handle the zoom
       }
       
+      // Otherwise, disable zoom and allow page scroll
       controls.enableZoom = false;
+      // Don't prevent default - let page scroll normally
     };
     
+    // Add wheel listener with passive: true to allow page scroll
     container.addEventListener('wheel', wheelHandler, { passive: true });
     
+    // Initially disable zoom (user must interact first)
     controls.enableZoom = false;
     
-    console.log('✅ Smart scrolling enabled');
+    console.log('✅ Smart scrolling enabled: Use Ctrl+Scroll to zoom, or click and drag to interact');
   }
 
   updateMarkers() {
@@ -1340,6 +1311,7 @@ class D3GlobeElement extends HTMLElement {
       
       const { markerRecent, markerOld, markerStyle, markerSize, showPulse, showVisitCount, badgeBg, badgeText, showTooltip } = this.styleProps;
       
+      // Calculate stats
       let recentCount = 0;
       let totalVisits = 0;
       
@@ -1348,14 +1320,16 @@ class D3GlobeElement extends HTMLElement {
         totalVisits += location.totalVisits || 0;
       });
       
+      // Get global tooltip element
       const tooltip = this.shadowRoot.getElementById('globalTooltip');
       
+      // Create HTML markers - STABLE VERSION
       this.globe
         .htmlElementsData(locations)
         .htmlLat(d => d.lat)
         .htmlLng(d => d.lng)
         .htmlAltitude(0.01)
-        .htmlTransitionDuration(0)
+        .htmlTransitionDuration(0) // Critical: No animation = no drift
         .htmlElement(d => {
           const el = document.createElement('div');
           el.className = 'marker-element';
@@ -1364,6 +1338,7 @@ class D3GlobeElement extends HTMLElement {
           const color = d.isRecent ? markerRecent : markerOld;
           const size = markerSize || 24;
           
+          // Create marker HTML based on style - NEVER MODIFIED AFTER CREATION
           if (markerStyle === 'pin') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
@@ -1427,6 +1402,7 @@ class D3GlobeElement extends HTMLElement {
             `;
           }
           
+          // Tooltip handlers - ONLY if enabled
           if (showTooltip && tooltip) {
             el.addEventListener('mouseenter', () => {
               tooltip.innerHTML = `
@@ -1461,6 +1437,7 @@ class D3GlobeElement extends HTMLElement {
           return el;
         });
       
+      // Add pulse rings for recent visitors
       if (showPulse) {
         const ringsData = locations
           .filter(loc => loc.isRecent)
@@ -1489,6 +1466,7 @@ class D3GlobeElement extends HTMLElement {
       console.log('Recent (24h):', recentCount);
       console.log('======================================\n');
       
+      // Update stats display
       this.shadowRoot.getElementById('cityCount').textContent = locations.length;
       this.shadowRoot.getElementById('totalVisits').textContent = totalVisits;
       this.shadowRoot.getElementById('recentCount').textContent = recentCount;
