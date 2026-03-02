@@ -952,8 +952,8 @@ class D3GlobeElement extends HTMLElement {
       
       // Load Globe.GL
       if (!window.Globe) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
-        await this.waitForGlobal('Globe', 5000);
+        await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js');
+        await this.waitForGlobal('Globe', 20000);
       }
       
       if (!window.Globe) {
