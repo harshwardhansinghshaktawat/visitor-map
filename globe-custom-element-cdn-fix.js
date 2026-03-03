@@ -1,8 +1,7 @@
 class D3GlobeElement extends HTMLElement {
   constructor() {
     super();
-    // === LIGHT DOM VERSION (Wix Compatible) ===
-    // No shadow DOM - everything is in light DOM so Wix Editor can see and style it
+    this.attachShadow({ mode: 'open' });
     this.globe = null;
     this.handleResize = this.handleResize.bind(this);
     this.resizeTimeout = null;
@@ -14,12 +13,7 @@ class D3GlobeElement extends HTMLElement {
     const initialStyleProps = this.getAttribute('style-props');
     this.styleProps = initialStyleProps ? JSON.parse(initialStyleProps) : this.getDefaultStyleProps();
     
-    console.log('✅ D3GlobeElement (Light DOM): Constructor called with props:', this.styleProps);
-  }
-
-  // Helper to easily find elements (replaces shadowRoot.getElementById)
-  $(selector) {
-    return this.querySelector(selector);
+    console.log('✅ D3GlobeElement: Constructor called with props:', this.styleProps);
   }
 
   getDefaultStyleProps() {
@@ -55,7 +49,7 @@ class D3GlobeElement extends HTMLElement {
   }
 
   connectedCallback() {
-    console.log('✅ D3GlobeElement (Light DOM): Connected to DOM');
+    console.log('✅ D3GlobeElement: Connected to DOM');
     setTimeout(() => {
       const stylePropsAttr = this.getAttribute('style-props');
       if (stylePropsAttr) {
@@ -134,7 +128,7 @@ class D3GlobeElement extends HTMLElement {
         recent: 'Récent',
         earlier: 'Plus tôt',
         totalVisitsLabel: 'Visites Totales:',
-        uniqueVisitors: 'Visitateurs Uniques:',
+        uniqueVisitors: 'Visiteurs Uniques:',
         lastVisit: 'Dernière Visite:',
         activeNow: '🟢 Actif dans les dernières 24h',
         loading: 'Chargement du Globe 3D...'
@@ -289,12 +283,12 @@ class D3GlobeElement extends HTMLElement {
   }
 
   render() {
-    console.log('🎨 Rendering 3D Globe (Light DOM) with styles:', this.styleProps);
+    console.log('🎨 Rendering 3D Globe with styles:', this.styleProps);
     
     const styles = this.getStyles();
     const t = this.getTranslations();
     
-    this.innerHTML = `
+    this.shadowRoot.innerHTML = `
       <style>${styles}</style>
 
       <div class="globe-container">
@@ -389,8 +383,7 @@ class D3GlobeElement extends HTMLElement {
     } = this.styleProps;
     
     return `
-      /* LIGHT DOM SCOPING - Works perfectly in Wix */
-      d3-globe-element {
+      :host {
         display: block;
         width: 100%;
         height: 100%;
@@ -641,42 +634,149 @@ class D3GlobeElement extends HTMLElement {
       
       /* Responsive Design */
       @media (max-width: 1024px) {
-        .bottom-stats { padding: 12px 16px; }
-        .stats-group { gap: 20px; }
-        .stat-card { min-width: 80px; }
-        .stat-value { font-size: 24px; }
-        .stat-label { font-size: 11px; }
-        .controls-overlay, .zoom-controls { top: 12px; }
-        .control-btn { width: 40px; height: 40px; }
-        .zoom-btn { width: 36px; height: 36px; font-size: 18px; }
+        .bottom-stats {
+          padding: 12px 16px;
+        }
+        
+        .stats-group {
+          gap: 20px;
+        }
+        
+        .stat-card {
+          min-width: 80px;
+        }
+        
+        .stat-value {
+          font-size: 24px;
+        }
+        
+        .stat-label {
+          font-size: 11px;
+        }
+        
+        .controls-overlay, .zoom-controls {
+          top: 12px;
+        }
+        
+        .control-btn {
+          width: 40px;
+          height: 40px;
+        }
+        
+        .zoom-btn {
+          width: 36px;
+          height: 36px;
+          font-size: 18px;
+        }
       }
       
       @media (max-width: 768px) {
-        d3-globe-element { min-height: 400px; }
-        .globe-container { min-height: 400px; border-radius: 8px; }
-        .bottom-stats { flex-direction: column; padding: 12px; gap: 12px; }
-        .stats-group { width: 100%; gap: 16px; }
-        .stat-divider { display: none; }
-        .legend-group { width: 100%; justify-content: center; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); }
-        .stat-card { min-width: 70px; }
-        .stat-value { font-size: 20px; }
-        .map-title { display: none; }
-        .controls-overlay { top: 8px; left: 8px; gap: 6px; }
-        .control-btn { width: 36px; height: 36px; }
-        .zoom-controls { top: 8px; right: 8px; gap: 6px; }
-        .zoom-btn { width: 32px; height: 32px; font-size: 16px; }
+        :host {
+          min-height: 400px;
+        }
+        
+        .globe-container {
+          min-height: 400px;
+          border-radius: 8px;
+        }
+        
+        .bottom-stats {
+          flex-direction: column;
+          padding: 12px;
+          gap: 12px;
+        }
+        
+        .stats-group {
+          width: 100%;
+          gap: 16px;
+        }
+        
+        .stat-divider {
+          display: none;
+        }
+        
+        .legend-group {
+          width: 100%;
+          justify-content: center;
+          padding-top: 8px;
+          border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+          min-width: 70px;
+        }
+        
+        .stat-value {
+          font-size: 20px;
+        }
+        
+        .map-title {
+          display: none;
+        }
+        
+        .controls-overlay {
+          top: 8px;
+          left: 8px;
+          gap: 6px;
+        }
+        
+        .control-btn {
+          width: 36px;
+          height: 36px;
+        }
+        
+        .zoom-controls {
+          top: 8px;
+          right: 8px;
+          gap: 6px;
+        }
+        
+        .zoom-btn {
+          width: 32px;
+          height: 32px;
+          font-size: 16px;
+        }
       }
       
       @media (max-width: 480px) {
-        d3-globe-element { min-height: 350px; }
-        .globe-container { min-height: 350px; border-radius: 6px; }
-        .stat-value { font-size: 18px; }
-        .stat-label { font-size: 10px; }
-        .stat-card { min-width: 60px; }
-        .controls-overlay, .zoom-controls { top: 6px; }
-        .control-btn, .zoom-btn { width: 28px; height: 28px; }
-        .control-btn svg { width: 16px; height: 16px; }
-        .zoom-btn { font-size: 14px; }
+        :host {
+          min-height: 350px;
+        }
+        
+        .globe-container {
+          min-height: 350px;
+          border-radius: 6px;
+        }
+        
+        .stat-value {
+          font-size: 18px;
+        }
+        
+        .stat-label {
+          font-size: 10px;
+        }
+        
+        .stat-card {
+          min-width: 60px;
+        }
+        
+        .controls-overlay, .zoom-controls {
+          top: 6px;
+        }
+        
+        .control-btn, .zoom-btn {
+          width: 28px;
+          height: 28px;
+        }
+        
+        .control-btn svg {
+          width: 16px;
+          height: 16px;
+        }
+        
+        .zoom-btn {
+          font-size: 14px;
+        }
       }
     `;
   }
@@ -684,19 +784,26 @@ class D3GlobeElement extends HTMLElement {
   updateVisibility() {
     const { showZoom, showStats } = this.styleProps;
     
-    const zoomControls = this.$('#zoomControls');
-    const bottomStats = this.$('#bottomStats');
+    const zoomControls = this.shadowRoot.getElementById('zoomControls');
+    const bottomStats = this.shadowRoot.getElementById('bottomStats');
     
-    if (zoomControls) zoomControls.style.display = showZoom ? 'flex' : 'none';
-    if (bottomStats) bottomStats.style.display = showStats ? 'flex' : 'none';
+    if (zoomControls) {
+      zoomControls.style.display = showZoom ? 'flex' : 'none';
+    }
+    
+    if (bottomStats) {
+      bottomStats.style.display = showStats ? 'flex' : 'none';
+    }
   }
 
   updateGlobeStyles() {
     console.log('🎨 Updating globe styles...');
+    
     if (!this.globe) return;
     
     const { countryFill, countryStroke } = this.styleProps;
     
+    // Update globe base (ocean) color
     this.globe
       .globeMaterial(new window.THREE.MeshPhongMaterial({
         color: this.styleProps.bgColor1 || '#667eea',
@@ -707,6 +814,7 @@ class D3GlobeElement extends HTMLElement {
       .atmosphereColor(countryStroke || '#667eea')
       .atmosphereAltitude(0.15);
     
+    // Update country colors using POLYGONS for accurate rendering
     if (this.countriesData) {
       this.globe
         .polygonsData(this.countriesData.features)
@@ -716,23 +824,31 @@ class D3GlobeElement extends HTMLElement {
         .polygonAltitude(0.01);
     }
     
+    // Update markers with new colors
     const mapData = this.getAttribute('map-data');
-    if (mapData) this.updateMarkers();
+    if (mapData) {
+      this.updateMarkers();
+    }
   }
 
   setupControls() {
-    const autoRotateBtn = this.$('#autoRotateBtn');
-    const resetViewBtn = this.$('#resetViewBtn');
-    const zoomIn = this.$('#zoomIn');
-    const zoomOut = this.$('#zoomOut');
+    const autoRotateBtn = this.shadowRoot.getElementById('autoRotateBtn');
+    const resetViewBtn = this.shadowRoot.getElementById('resetViewBtn');
+    const zoomIn = this.shadowRoot.getElementById('zoomIn');
+    const zoomOut = this.shadowRoot.getElementById('zoomOut');
     
     if (autoRotateBtn) {
-      autoRotateBtn.classList.add('active');
+      autoRotateBtn.classList.add('active'); // Start with auto-rotate on
       autoRotateBtn.addEventListener('click', () => {
         if (!this.globe) return;
         this.autoRotate = !this.autoRotate;
         this.globe.controls().autoRotate = this.autoRotate;
-        autoRotateBtn.classList.toggle('active', this.autoRotate);
+        
+        if (this.autoRotate) {
+          autoRotateBtn.classList.add('active');
+        } else {
+          autoRotateBtn.classList.remove('active');
+        }
       });
     }
     
@@ -764,17 +880,29 @@ class D3GlobeElement extends HTMLElement {
     return new Promise((resolve, reject) => {
       const existingScript = document.querySelector(`script[src="${src}"]`);
       if (existingScript) {
-        if (existingScript.dataset.loaded === 'true') return resolve();
-        existingScript.addEventListener('load', () => resolve());
-        existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+        if (existingScript.dataset.loaded === 'true') {
+          resolve();
+        } else {
+          existingScript.addEventListener('load', () => resolve());
+          existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+        }
         return;
       }
       
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
-      script.onload = () => { script.dataset.loaded = 'true'; resolve(); };
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      
+      script.onload = () => {
+        script.dataset.loaded = 'true';
+        console.log(`✅ Script loaded: ${src}`);
+        resolve();
+      };
+      
+      script.onerror = () => {
+        reject(new Error(`Failed to load ${src}`));
+      };
+      
       document.head.appendChild(script);
     });
   }
@@ -782,9 +910,11 @@ class D3GlobeElement extends HTMLElement {
   waitForGlobal(globalName, timeout = 5000) {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
+      
       const checkInterval = setInterval(() => {
         if (window[globalName]) {
           clearInterval(checkInterval);
+          console.log(`✅ ${globalName} is now available`);
           resolve();
         } else if (Date.now() - startTime > timeout) {
           clearInterval(checkInterval);
@@ -798,54 +928,92 @@ class D3GlobeElement extends HTMLElement {
     try {
       console.log('📦 Loading Globe.GL library...');
       
+      // Load Three.js first (required by Globe.GL)
       if (!window.THREE) {
         await this.loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
-        await this.waitForGlobal('THREE');
+        await this.waitForGlobal('THREE', 5000);
+      }
+      
+      if (!window.THREE) {
+        throw new Error('Three.js failed to load');
+      }
+      console.log('✅ Three.js loaded');
+      
+      // Load TopoJSON (needed for country data)
+      if (!window.topojson) {
+        await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
+        await this.waitForGlobal('topojson', 5000);
       }
       
       if (!window.topojson) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
-        await this.waitForGlobal('topojson');
+        throw new Error('TopoJSON failed to load');
+      }
+      console.log('✅ TopoJSON loaded');
+      
+      // Load Globe.GL
+      if (!window.Globe) {
+        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
+        await this.waitForGlobal('Globe', 5000);
       }
       
       if (!window.Globe) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
-        await this.waitForGlobal('Globe');
+        throw new Error('Globe.GL failed to load');
       }
+      console.log('✅ Globe.GL loaded');
       
       await this.initializeGlobe();
       window.addEventListener('resize', this.handleResize);
       
     } catch (error) {
       console.error('❌ Error loading libraries:', error);
-      const loading = this.$('#loading');
-      if (loading) loading.textContent = 'Error loading globe';
+      const loading = this.shadowRoot.getElementById('loading');
+      if (loading) {
+        loading.textContent = 'Error loading globe';
+      }
     }
   }
 
   handleResize() {
-    if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+    
     this.resizeTimeout = setTimeout(() => {
       if (!this.globe) return;
-      const container = this.$('#globeViz');
-      this.globe.width(container.clientWidth).height(container.clientHeight);
+      
+      console.log('🔄 Handling resize...');
+      const container = this.shadowRoot.getElementById('globeViz');
+      
+      this.globe
+        .width(container.clientWidth)
+        .height(container.clientHeight);
+      
+      console.log('✅ Resize complete');
     }, 250);
   }
 
   async initializeGlobe() {
     console.log('🌍 Initializing Globe.GL...');
-    const container = this.$('#globeViz');
-    const loading = this.$('#loading');
+    
+    const container = this.shadowRoot.getElementById('globeViz');
+    const loading = this.shadowRoot.getElementById('loading');
     
     const { bgColor1, countryFill, countryStroke } = this.styleProps;
     
     try {
+      // Show initial loading message
       if (loading) {
         loading.textContent = this.getTranslations().loading;
         loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
+        loading.style.color = 'white';
+        loading.style.fontSize = '18px';
       }
       
-      this.globe = window.Globe({ animateIn: true })(container)
+      // Initialize Globe first
+      this.globe = window.Globe({ animateIn: true })
+        (container)
         .backgroundColor(bgColor1 || '#667eea')
         .globeMaterial(new window.THREE.MeshPhongMaterial({
           color: bgColor1 || '#667eea',
@@ -859,6 +1027,7 @@ class D3GlobeElement extends HTMLElement {
         .height(container.clientHeight)
         .pointOfView({ lat: 20, lng: 10, altitude: 2.5 });
       
+      // Configure controls with SMART SCROLL HANDLING
       const controls = this.globe.controls();
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.5;
@@ -866,9 +1035,19 @@ class D3GlobeElement extends HTMLElement {
       controls.minDistance = 101;
       controls.maxDistance = 500;
       
-      await this.loadCountriesData(loading, countryFill, countryStroke);
+      console.log('✅ Globe initialized, loading countries...');
       
-      if (this.globe) this.setupSmartScrolling(controls, container);
+      // Load countries data with retry logic
+      const success = await this.loadCountriesData(loading, countryFill, countryStroke);
+      
+      // Setup smart scrolling after successful load (in try-catch to be safe)
+      if (success && this.globe) {
+        try {
+          this.setupSmartScrolling(controls, container);
+        } catch (scrollError) {
+          console.warn('⚠️ Smart scrolling setup failed (non-critical):', scrollError);
+        }
+      }
       
     } catch (error) {
       console.error('❌ Critical error initializing globe:', error);
@@ -881,25 +1060,63 @@ class D3GlobeElement extends HTMLElement {
 
   async loadCountriesData(loading, countryFill, countryStroke, retryCount = 0) {
     const maxRetries = 3;
+    
     try {
+      // Ensure TopoJSON is loaded
       if (!window.topojson) {
-        if (loading) loading.textContent = 'Loading libraries...';
-        await new Promise(r => setTimeout(r, 500));
+        console.log('⏳ Waiting for TopoJSON to load...');
+        
+        if (loading) {
+          loading.textContent = 'Loading libraries...';
+          loading.style.color = 'white';
+          loading.style.display = 'block';
+          loading.style.opacity = '1';
+          loading.style.visibility = 'visible';
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!window.topojson && retryCount < maxRetries) {
+          console.log('🔄 Retrying TopoJSON check...');
+          return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
+        }
+        
+        if (!window.topojson) {
+          throw new Error('TopoJSON library not loaded');
+        }
       }
       
-      if (loading) loading.textContent = 'Loading world map...';
+      console.log('📥 Fetching countries data...');
       
+      if (loading) {
+        loading.textContent = 'Loading world map...';
+        loading.style.color = 'white';
+        loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
+      }
+      
+      // Fetch with timeout
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
       
       const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
         signal: controller.signal
       });
+      
       clearTimeout(timeout);
       
-      const worldData = await response.json();
-      this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
+      const worldData = await response.json();
+      
+      // Convert TopoJSON to GeoJSON
+      this.countriesData = window.topojson.feature(worldData, worldData.objects.countries);
+      console.log('✅ Countries data loaded:', this.countriesData.features.length, 'countries');
+      
+      // Display countries using POLYGONS - REMOVED polygonSideColorDarker
       this.globe
         .polygonsData(this.countriesData.features)
         .polygonCapColor(() => countryFill || '#ffffff')
@@ -907,96 +1124,212 @@ class D3GlobeElement extends HTMLElement {
         .polygonStrokeColor(() => countryStroke || '#667eea')
         .polygonAltitude(0.01);
       
-      // Hide loading
-      if (loading) {
+      console.log('✅ Countries rendered successfully');
+      
+      // CRITICAL FIX: Hide loading indicator IMMEDIATELY and COMPLETELY
+      if (loading && loading.parentNode) {
         loading.style.display = 'none';
-        loading.remove();
+        loading.style.opacity = '0';
+        loading.style.visibility = 'hidden';
+        loading.textContent = '';
+        
+        // Additional safety: remove from DOM flow
+        setTimeout(() => {
+          if (loading && loading.parentNode) {
+            loading.remove();
+          }
+        }, 100);
       }
       
-      // Load markers
-      const mapData = this.getAttribute('map-data');
-      if (mapData) this.updateMarkers();
+      console.log('✅ Globe ready with ALL countries (including India, Asia, etc.)');
       
+      // Load markers in separate try-catch (non-critical - don't trigger retry)
+      try {
+        const mapData = this.getAttribute('map-data');
+        if (mapData) {
+          console.log('📍 Loading markers...');
+          this.updateMarkers();
+        }
+      } catch (markerError) {
+        console.warn('⚠️ Marker loading failed (non-critical):', markerError);
+      }
+      
+      // Return success (smart scrolling setup will be done by initializeGlobe)
       return true;
       
     } catch (error) {
-      console.error('❌ Error loading countries:', error);
+      console.error('❌ Error loading countries (attempt ' + (retryCount + 1) + '):', error);
+      
+      // Retry logic
       if (retryCount < maxRetries) {
-        if (loading) loading.textContent = `Retrying... (${retryCount + 1}/${maxRetries})`;
-        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+        console.log(`🔄 Retry ${retryCount + 1}/${maxRetries}...`);
+        
+        if (loading) {
+          loading.textContent = `Loading... (retry ${retryCount + 1}/${maxRetries})`;
+          loading.style.color = '#ffd700'; // Yellow color for retry
+          loading.style.display = 'block';
+          loading.style.opacity = '1';
+          loading.style.visibility = 'visible';
+        }
+        
+        // Wait before retry (progressive delay)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        
+        // Recursive retry
         return this.loadCountriesData(loading, countryFill, countryStroke, retryCount + 1);
       }
+      
+      // Max retries exceeded - show final error
+      console.error('❌ Failed to load countries after', maxRetries, 'attempts');
       
       if (loading) {
         loading.textContent = 'Unable to load map. Click to refresh.';
         loading.style.color = '#ff6b6b';
+        loading.style.fontSize = '14px';
+        loading.style.display = 'block';
+        loading.style.opacity = '1';
+        loading.style.visibility = 'visible';
+        loading.style.cursor = 'pointer';
+        
+        // Add click to refresh functionality
         loading.onclick = () => window.location.reload();
       }
+      
+      // Still try to load markers if available (globe works without countries)
+      try {
+        const mapData = this.getAttribute('map-data');
+        if (mapData) {
+          console.log('📍 Loading markers without country data...');
+          this.updateMarkers();
+        }
+      } catch (markerError) {
+        console.warn('⚠️ Failed to load markers:', markerError);
+      }
+      
+      // Return failure
       return false;
     }
   }
 
   setupSmartScrolling(controls, container) {
+    // Track if user is actively interacting with the globe
     let isInteracting = false;
     let interactionTimeout = null;
     
-    const onPointerDown = () => { isInteracting = true; controls.enableZoom = true; };
+    // Enable zoom when user starts dragging
+    const onPointerDown = () => {
+      isInteracting = true;
+      controls.enableZoom = true;
+      
+      // Clear any existing timeout
+      if (interactionTimeout) {
+        clearTimeout(interactionTimeout);
+      }
+    };
+    
+    // Disable zoom after user stops interacting (1 second delay)
     const onPointerUp = () => {
       interactionTimeout = setTimeout(() => {
         isInteracting = false;
         controls.enableZoom = false;
       }, 1000);
     };
+    
+    // Re-enable zoom when mouse moves over globe
     const onPointerMove = () => {
       if (isInteracting) {
         controls.enableZoom = true;
-        clearTimeout(interactionTimeout);
-        interactionTimeout = setTimeout(() => { isInteracting = false; controls.enableZoom = false; }, 1000);
+        
+        // Reset timeout
+        if (interactionTimeout) {
+          clearTimeout(interactionTimeout);
+        }
+        
+        interactionTimeout = setTimeout(() => {
+          isInteracting = false;
+          controls.enableZoom = false;
+        }, 1000);
       }
     };
     
+    // Attach listeners to the globe container
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointerup', onPointerUp);
     container.addEventListener('pointermove', onPointerMove);
     
+    // Custom wheel handler for smart zooming
     const wheelHandler = (event) => {
-      if (event.ctrlKey || event.metaKey || isInteracting) {
+      // Allow zoom with Ctrl+Scroll (standard browser convention)
+      if (event.ctrlKey || event.metaKey) {
         controls.enableZoom = true;
-        return;
+        return; // Let Three.js handle the zoom
       }
+      
+      // If actively interacting, allow zoom
+      if (isInteracting) {
+        controls.enableZoom = true;
+        return; // Let Three.js handle the zoom
+      }
+      
+      // Otherwise, disable zoom and allow page scroll
       controls.enableZoom = false;
+      // Don't prevent default - let page scroll normally
     };
     
+    // Add wheel listener with passive: true to allow page scroll
     container.addEventListener('wheel', wheelHandler, { passive: true });
+    
+    // Initially disable zoom (user must interact first)
     controls.enableZoom = false;
-    console.log('✅ Smart scrolling enabled (Wix friendly)');
+    
+    console.log('✅ Smart scrolling enabled: Use Ctrl+Scroll to zoom, or click and drag to interact');
   }
 
   updateMarkers() {
-    if (!this.globe) return;
+    if (!this.globe) {
+      console.log('⏳ Globe not initialized yet');
+      return;
+    }
+    
     const mapData = this.getAttribute('map-data');
-    if (!mapData) return;
+    if (!mapData) {
+      console.log('⚠️ No map data attribute');
+      return;
+    }
     
     try {
       const locations = JSON.parse(mapData);
       const t = this.getTranslations();
-      const tooltip = this.$('#globalTooltip');
+      
+      console.log('\n========== UPDATING GLOBE MARKERS ==========');
+      console.log('📍 Total cities:', locations.length);
+      
+      if (locations.length === 0) {
+        console.log('⚠️ No locations to display');
+        return;
+      }
       
       const { markerRecent, markerOld, markerStyle, markerSize, showPulse, showVisitCount, badgeBg, badgeText, showTooltip } = this.styleProps;
       
+      // Calculate stats
       let recentCount = 0;
       let totalVisits = 0;
-      locations.forEach(loc => {
-        if (loc.isRecent) recentCount++;
-        totalVisits += loc.totalVisits || 0;
+      
+      locations.forEach(location => {
+        if (location.isRecent) recentCount++;
+        totalVisits += location.totalVisits || 0;
       });
       
+      // Get global tooltip element
+      const tooltip = this.shadowRoot.getElementById('globalTooltip');
+      
+      // Create HTML markers - STABLE VERSION
       this.globe
         .htmlElementsData(locations)
         .htmlLat(d => d.lat)
         .htmlLng(d => d.lng)
         .htmlAltitude(0.01)
-        .htmlTransitionDuration(0)
+        .htmlTransitionDuration(0) // Critical: No animation = no drift
         .htmlElement(d => {
           const el = document.createElement('div');
           el.className = 'marker-element';
@@ -1005,80 +1338,119 @@ class D3GlobeElement extends HTMLElement {
           const color = d.isRecent ? markerRecent : markerOld;
           const size = markerSize || 24;
           
+          // Create marker HTML based on style - NEVER MODIFIED AFTER CREATION
           if (markerStyle === 'pin') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size + 10}px;">
-                <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
-                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="${color}"/>
+                <svg width="${size}" height="${size + 10}" viewBox="0 0 24 34" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); display: block;">
+                  <path d="M12 0C7.58 0 4 3.58 4 8c0 5.5 8 13 8 13s8-7.5 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" 
+                        fill="${color}"/>
                 </svg>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                  <div style="position: absolute; top: -8px; right: -8px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid ${color}; 
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>` : ''}
-              </div>`;
+                  </div>
+                ` : ''}
+              </div>
+            `;
           } else if (markerStyle === 'circle') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${color}; 
+                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>` : ''}
-              </div>`;
+                  </div>
+                ` : ''}
+              </div>
+            `;
           } else if (markerStyle === 'square') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <div style="width: ${size}px; height: ${size}px; background: ${color}; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
+                <div style="width: ${size}px; height: ${size}px; background: ${color}; 
+                            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: rotate(45deg);"></div>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10;">
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; z-index: 10; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>` : ''}
-              </div>`;
+                  </div>
+                ` : ''}
+              </div>
+            `;
           } else if (markerStyle === 'star') {
             el.innerHTML = `
               <div style="position: relative; width: ${size}px; height: ${size}px;">
-                <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-                  <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" fill="${color}" stroke="white" stroke-width="1.5"/>
+                <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); display: block;">
+                  <path d="M12,2 L14.5,9.5 L22,10.5 L16.5,15.5 L18,23 L12,19 L6,23 L7.5,15.5 L2,10.5 L9.5,9.5 Z" 
+                        fill="${color}" stroke="white" stroke-width="1.5"/>
                 </svg>
                 ${showVisitCount && d.totalVisits > 1 ? `
-                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color};">
+                  <div style="position: absolute; top: -6px; right: -6px; background: ${badgeBg}; color: ${badgeText}; 
+                              border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; 
+                              justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid ${color}; pointer-events: none;">
                     ${d.totalVisits > 99 ? '99+' : d.totalVisits}
-                  </div>` : ''}
-              </div>`;
+                  </div>
+                ` : ''}
+              </div>
+            `;
           }
           
+          // Tooltip handlers - ONLY if enabled
           if (showTooltip && tooltip) {
             el.addEventListener('mouseenter', () => {
               tooltip.innerHTML = `
                 <strong style="color: ${this.styleProps.tooltipTitleColor}; font-size: 14px; display: block; margin-bottom: 6px;">📍 ${d.title}</strong>
-                <div style="margin: 3px 0;"><span style="color: ${this.styleProps.tooltipLabelColor};">${t.totalVisitsLabel}</span><span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span></div>
-                <div style="margin: 3px 0;"><span style="color: ${this.styleProps.tooltipLabelColor};">${t.uniqueVisitors}</span><span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span></div>
-                <div style="margin: 3px 0;"><span style="color: ${this.styleProps.tooltipLabelColor};">${t.lastVisit}</span><span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span></div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.totalVisitsLabel}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.totalVisits}</span>
+                </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.uniqueVisitors}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.visitorCount}</span>
+                </div>
+                <div style="margin: 3px 0;">
+                  <span style="color: ${this.styleProps.tooltipLabelColor};">${t.lastVisit}</span>
+                  <span style="color: ${this.styleProps.tooltipValueColor}; font-weight: 600; margin-left: 8px;">${d.lastVisit}</span>
+                </div>
                 ${d.isRecent ? `<div style="background: rgba(72, 187, 120, 0.2); padding: 4px 8px; border-radius: 4px; margin-top: 6px; text-align: center; color: ${this.styleProps.tooltipHighlightColor}; font-weight: 600;">${t.activeNow}</div>` : ''}
               `;
               tooltip.classList.add('visible');
             });
             
-            el.addEventListener('mousemove', e => {
+            el.addEventListener('mousemove', (e) => {
               tooltip.style.left = e.clientX + 'px';
               tooltip.style.top = e.clientY + 'px';
             });
             
-            el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+            el.addEventListener('mouseleave', () => {
+              tooltip.classList.remove('visible');
+            });
           }
           
           return el;
         });
       
+      // Add pulse rings for recent visitors
       if (showPulse) {
-        const ringsData = locations.filter(loc => loc.isRecent).map(location => ({
-          lat: location.lat,
-          lng: location.lng,
-          maxR: 5,
-          propagationSpeed: 3,
-          repeatPeriod: 1200
-        }));
-        this.globe.ringsData(ringsData)
+        const ringsData = locations
+          .filter(loc => loc.isRecent)
+          .map(location => ({
+            lat: location.lat,
+            lng: location.lng,
+            maxR: 5,
+            propagationSpeed: 3,
+            repeatPeriod: 1200
+          }));
+        
+        this.globe
+          .ringsData(ringsData)
           .ringColor(() => markerRecent)
           .ringMaxRadius('maxR')
           .ringPropagationSpeed('propagationSpeed')
@@ -1088,10 +1460,16 @@ class D3GlobeElement extends HTMLElement {
         this.globe.ringsData([]);
       }
       
-      // Update stats
-      this.$('#cityCount').textContent = locations.length;
-      this.$('#totalVisits').textContent = totalVisits;
-      this.$('#recentCount').textContent = recentCount;
+      console.log('\n📊 STATISTICS');
+      console.log('Cities:', locations.length);
+      console.log('Total Visits:', totalVisits);
+      console.log('Recent (24h):', recentCount);
+      console.log('======================================\n');
+      
+      // Update stats display
+      this.shadowRoot.getElementById('cityCount').textContent = locations.length;
+      this.shadowRoot.getElementById('totalVisits').textContent = totalVisits;
+      this.shadowRoot.getElementById('recentCount').textContent = recentCount;
       
     } catch (error) {
       console.error('❌ Error updating markers:', error);
@@ -1100,4 +1478,4 @@ class D3GlobeElement extends HTMLElement {
 }
 
 customElements.define('d3-globe-element', D3GlobeElement);
-console.log('✅ d3-globe-element (Light DOM - Wix Ready) registered');
+console.log('✅ d3-globe-element registered');
