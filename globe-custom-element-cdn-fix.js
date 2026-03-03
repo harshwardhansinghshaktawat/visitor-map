@@ -1,3 +1,35 @@
+// At the top of your file, outside the class
+const loadingPromises = {};
+
+function loadScript(url, globalName) {
+    // If already loaded, return immediately
+    if (window[globalName]) return Promise.resolve();
+    
+    // If currently loading, return the existing promise
+    if (loadingPromises[url]) return loadingPromises[url];
+
+    loadingPromises[url] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = url;
+        script.async = true;
+
+        script.onload = () => {
+            console.log(`✅ Script loaded: ${url}`);
+            resolve();
+        };
+
+        script.onerror = () => {
+            delete loadingPromises[url];
+            reject(new Error(`Failed to load script: ${url}`));
+        };
+
+        document.head.appendChild(script);
+    });
+
+    return loadingPromises[url];
+}
+
 class D3GlobeElement extends HTMLElement {
   constructor() {
     super();
@@ -55,6 +87,7 @@ class D3GlobeElement extends HTMLElement {
       if (stylePropsAttr) {
         this.styleProps = JSON.parse(stylePropsAttr);
       }
+      this._isConnected = true;
       this.render();
     }, 50);
   }
@@ -930,7 +963,7 @@ class D3GlobeElement extends HTMLElement {
       
       // Load Three.js first (required by Globe.GL)
       if (!window.THREE) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+        await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.159.0/three.min.js');
         await this.waitForGlobal('THREE', 5000);
       }
       
