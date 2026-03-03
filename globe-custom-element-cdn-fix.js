@@ -1,34 +1,10 @@
-// At the top of your file, outside the class
-const loadingPromises = {};
+// ========================================================
+// FIXED VERSION - RACE CONDITION & TIMEOUT FIXED FOR WIX
+// Singleton loader + ultra-robust THREE detection
+// ========================================================
 
-function loadScript(url, globalName) {
-    // If already loaded, return immediately
-    if (window[globalName]) return Promise.resolve();
-    
-    // If currently loading, return the existing promise
-    if (loadingPromises[url]) return loadingPromises[url];
-
-    loadingPromises[url] = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = url;
-        script.async = true;
-
-        script.onload = () => {
-            console.log(`✅ Script loaded: ${url}`);
-            resolve();
-        };
-
-        script.onerror = () => {
-            delete loadingPromises[url];
-            reject(new Error(`Failed to load script: ${url}`));
-        };
-
-        document.head.appendChild(script);
-    });
-
-    return loadingPromises[url];
-}
+// GLOBAL SINGLETON LOADER (prevents Wix Thunderbolt race condition)
+let globeLibsPromise = null;
 
 class D3GlobeElement extends HTMLElement {
   constructor() {
@@ -87,7 +63,6 @@ class D3GlobeElement extends HTMLElement {
       if (stylePropsAttr) {
         this.styleProps = JSON.parse(stylePropsAttr);
       }
-      this._isConnected = true;
       this.render();
     }, 50);
   }
@@ -913,12 +888,7 @@ class D3GlobeElement extends HTMLElement {
     return new Promise((resolve, reject) => {
       const existingScript = document.querySelector(`script[src="${src}"]`);
       if (existingScript) {
-        if (existingScript.dataset.loaded === 'true') {
-          resolve();
-        } else {
-          existingScript.addEventListener('load', () => resolve());
-          existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
-        }
+        resolve();
         return;
       }
       
@@ -927,7 +897,6 @@ class D3GlobeElement extends HTMLElement {
       script.async = true;
       
       script.onload = () => {
-        script.dataset.loaded = 'true';
         console.log(`✅ Script loaded: ${src}`);
         resolve();
       };
@@ -940,20 +909,29 @@ class D3GlobeElement extends HTMLElement {
     });
   }
 
-  waitForGlobal(globalName, timeout = 5000) {
+  waitForGlobal(globalName, timeout = 15000) {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
       
-      const checkInterval = setInterval(() => {
+      const check = () => {
         if (window[globalName]) {
-          clearInterval(checkInterval);
+          if (globalName === 'THREE' && typeof window.THREE?.Vector3 !== 'function') {
+            if (Date.now() - startTime > timeout) {
+              reject(new Error('THREE loaded but incomplete'));
+              return;
+            }
+            setTimeout(check, 50);
+            return;
+          }
           console.log(`✅ ${globalName} is now available`);
           resolve();
         } else if (Date.now() - startTime > timeout) {
-          clearInterval(checkInterval);
           reject(new Error(`Timeout waiting for ${globalName}`));
+        } else {
+          setTimeout(check, 50);
         }
-      }, 50);
+      };
+      check();
     });
   }
 
@@ -961,39 +939,11 @@ class D3GlobeElement extends HTMLElement {
     try {
       console.log('📦 Loading Globe.GL library...');
       
-      // Load Three.js first (required by Globe.GL)
-      if (!window.THREE) {
-        await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.159.0/three.min.js');
-        await this.waitForGlobal('THREE', 5000);
+      if (!globeLibsPromise) {
+        globeLibsPromise = this._loadLibrariesInternal();
       }
-      
-      if (!window.THREE) {
-        throw new Error('Three.js failed to load');
-      }
-      console.log('✅ Three.js loaded');
-      
-      // Load TopoJSON (needed for country data)
-      if (!window.topojson) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
-        await this.waitForGlobal('topojson', 5000);
-      }
-      
-      if (!window.topojson) {
-        throw new Error('TopoJSON failed to load');
-      }
-      console.log('✅ TopoJSON loaded');
-      
-      // Load Globe.GL
-      if (!window.Globe) {
-        await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
-        await this.waitForGlobal('Globe', 5000);
-      }
-      
-      if (!window.Globe) {
-        throw new Error('Globe.GL failed to load');
-      }
-      console.log('✅ Globe.GL loaded');
-      
+      await globeLibsPromise;
+
       await this.initializeGlobe();
       window.addEventListener('resize', this.handleResize);
       
@@ -1004,6 +954,29 @@ class D3GlobeElement extends HTMLElement {
         loading.textContent = 'Error loading globe';
       }
     }
+  }
+
+  async _loadLibrariesInternal() {
+    // THREE.js
+    if (!window.THREE) {
+      await this.loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+      await this.waitForGlobal('THREE', 15000);
+    }
+    console.log('✅ Three.js loaded');
+    
+    // TopoJSON
+    if (!window.topojson) {
+      await this.loadScript('https://cdn.jsdelivr.net/npm/topojson@3.0.2/dist/topojson.min.js');
+      await this.waitForGlobal('topojson', 8000);
+    }
+    console.log('✅ TopoJSON loaded');
+    
+    // Globe.GL
+    if (!window.Globe) {
+      await this.loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js');
+      await this.waitForGlobal('Globe', 8000);
+    }
+    console.log('✅ Globe.GL loaded');
   }
 
   handleResize() {
